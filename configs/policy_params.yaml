@@ -1,0 +1,156 @@
+# Decision Agent policy parameters — transcribed verbatim from Table 3 of the paper.
+# Anything not given an explicit numeric value in the paper is marked CALIBRATE:
+# you must sweep it on your own pre-holdout validation split (Section III-A / IV-F).
+
+detection_fusion:
+  w_sensor: 0.20        # weight of aggregated sensor-level anomaly intensity
+  w_window: 0.80        # weight of window-agent anomaly intensity
+  tau_det: 0.50         # system-level anomaly decision threshold
+
+drift_fusion:
+  w_wdi: 0.60           # weight of Window Drift Index
+  w_sensor_drift: 0.30  # weight of aggregated sensor drift votes
+  w_fdi: 0.10           # weight of Forecast Drift Index
+  tau_drift: 0.35       # system-level drift decision threshold
+
+failure_prediction:
+  tau_fail: 0.50        # failure probability threshold (p_fault >= tau_fail)
+  tau_fail_crit: 0.80   # critical failure escalation threshold
+
+warning_gating:
+  tau_warn: 0.50        # base warning probability threshold
+  delta_margin: 0.0338  # warning margin gate: p_warn - p_normal >= delta_margin
+                         # (selected via PR sweep maximizing F1 under min-recall constraint)
+  delta_deficit: 0.03   # near-miss tolerance: 0 < (p_normal - p_warn) < delta_deficit
+
+warning_level_margins:
+  delta_margin_high: 0.10   # CALIBRATE — paper shows only the qualitative HIGH/MED/LOW
+  delta_margin_low: 0.04    # split logic (Algorithm 1); exact cut points not published
+
+cooldowns:
+  n_anomaly: 5           # anomaly cooldown steps (Sensor Agent)
+  n_drift: 100            # drift cooldown steps (system-level)
+
+alert_mapping:
+  tau_alert_low: 0.35
+  tau_alert_med: 0.55
+  tau_alert_high: 0.75
+
+sensor_aggregation:
+  top_k: 5                # top-K most anomalous sensors used in aggregation
+  confidence_weighting: true
+
+sensor_agent:
+  window_length_K: 100
+  latent_dim: 4
+  mad_sensitivity_k: 2.0
+  anomaly_cooldown_steps: 5
+  drift_jsd_threshold: 0.10
+  drift_confirm_votes: 3
+  drift_cooldown_steps: 100
+  drift_buffer_len: 100
+  retrain_recent_anomaly_rate: 0.30
+  retrain_drift_rate: 0.10
+  retrain_error_multiplier: 2.0
+  retrain_stats_stale_days: 7
+  train:
+    optimizer: adam
+    learning_rate: 1.0e-3
+    clipnorm: 1.0
+    loss: mse
+    batch_size: 64
+    max_epochs: 50
+    early_stopping_patience: 8
+
+adaptive_window_agent:
+  gdrnet_mlp:
+    hidden_widths: [64, 32, 16, 8]
+    activation: leaky_relu
+    leaky_relu_slope: 0.1
+    dropout_after_first_layer: 0.1
+    train:
+      optimizer: adam
+      learning_rate: 3.0e-4
+      clipnorm: 1.0
+      loss: huber
+      batch_size: 64
+      max_epochs: 200
+      early_stopping_patience: 20
+  next_step_predictor:
+    lstm_units: 128
+    dense_units: 64
+    dense_activation: relu
+    train:
+      optimizer: adam
+      learning_rate: 1.0e-3
+      loss: mse
+      batch_size: 512
+      epochs: 5
+      train_windows_sampled: 50000
+  runtime:
+    anomaly_k: 3.0
+    anomaly_cooldown_steps: 5
+    fdi_hist_bins: 25
+    wdi_hist_bins: 20
+    fdi_threshold: 0.25
+    wdi_threshold: 0.20
+    drift_confirm_votes: 10
+    drift_cooldown_steps: 100
+    long_term_buffer: 300
+    recent_buffer: 50
+    min_window_clamp: 2
+
+master_sensor_aggregator:
+  system_anomaly_threshold: 0.30
+  system_drift_threshold: 0.20
+  system_needs_retrain_threshold: 0.15
+
+prediction_agent_transformer:
+  num_encoder_blocks: 2
+  model_dim: 64
+  attention_heads: 4
+  feed_forward_dim: 128
+  dropout: 0.2
+  train:
+    loss: sparse_categorical_crossentropy
+    optimizer: adam
+    learning_rate: 1.0e-3
+    class_weighting: true
+    early_stopping: true
+
+data:
+  window_length_W: 100     # ~1000s / 16.7 min at 10s sampling
+  stride: 1
+  normalization: minmax_[-1,1]
+  early_warning_horizon_hours: 2
+  sensors_used:
+    - TP2
+    - TP3
+    - H1
+    - DV_pressure
+    - Reservoirs
+    - Oil_temperature
+    - Motor_current
+    - COMP
+    - DV_electric
+    - Towers
+    - MPG
+    - LPS
+  sensors_dropped_via_granger_causality:
+    - Pressure_switch
+    - Caudal_impulses
+    - Oil_level
+  exclude_data_before: "2020-04-01"
+  missing_value_imputation: one_day_seasonal_lag
+
+expert_agent:
+  llm_model: gpt-4o-mini
+  api: openai_responses_api
+  max_output_tokens: 400
+  max_retries: 2
+  invoked_when_warning_level: [LOW, MEDIUM]
+  response_schema: [summary, exp, likely_fault, recommended_action, severity]
+
+cost_framework:
+  fmcr_sweep_range: [0.05, 0.80]   # Failure Mitigation Cost Ratio C_R / C_F
+  expert_agent_alpha_sensitivity: [0.90, 0.75, 0.60]
