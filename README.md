@@ -1,25 +1,5 @@
 #Agentic Decision System for Early Equipment Failure Prediction
 
-Reproduction scaffold for:
-
-> S. Guha and A. Datta, "ASPIRE: An Agentic Decision System for Early Equipment
-> Failure Prediction and Intervention in Industrial IIoT," **IEEE Access**, vol. 14,
-> pp. 105006–105031, 2026. DOI: 10.1109/ACCESS.2026.3711010 (Open Access, CC BY 4.0)
-
-This is a from-scratch, best-effort re-implementation based on the architecture,
-equations, and hyperparameters **stated explicitly in the paper**. The authors did
-not publish a code repository at the time of writing — search
-`https://github.com/search?q=ASPIRE+IIoT+MetroPT` and the authors' own listed work
-(`GDRNet`, IEEE Access 2025) periodically in case an official repo appears.
-
-⚠️ **Honesty note on numbers**: The metrics quoted throughout `docs/` and in code
-comments as "PAPER-REPORTED" are copied directly from the paper's tables and are
-**not** independently verified here. Any run of this code produces "REPRODUCED
-(THIS RUN)" numbers that will differ — Table 3's calibration was done on the
-authors' own pre-holdout split, exact preprocessing, and random seeds, none of
-which are shared beyond what's described in prose. Treat this repo as a faithful
-*architecture* reproduction, not a guaranteed *score* reproduction.
-
 ## 1. Dataset
 
 **MetroPT-3** (UCI Machine Learning Repository), Davari et al. 2021.
