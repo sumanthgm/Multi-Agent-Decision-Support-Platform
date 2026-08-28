@@ -1,4 +1,4 @@
-# ASPIRE Reproduction — Agentic Decision System for Early Equipment Failure Prediction
+#Agentic Decision System for Early Equipment Failure Prediction
 
 Reproduction scaffold for:
 
