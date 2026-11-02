@@ -1,0 +1,4 @@
+# Optional extras. Without them the related experiments are skipped with a message.
+torch>=2.2                 # ASPIRE-style Transformer baseline (E1/E2 comparison rows)
+chronos-forecasting        # Chronos-Bolt zero-shot forecaster (E3; downloads a model from Hugging Face)
+ipykernel                  # running notebooks/Phase2_validation.ipynb locally

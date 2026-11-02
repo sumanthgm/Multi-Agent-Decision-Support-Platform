@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Environments and secrets
+.venv/
+venv/
+.env
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Generated outputs (the curated full-run results in results/ are tracked)
+results_quick/
+
+# Real datasets are downloaded locally, never committed (see data/real/README.md)
+data/real/*.csv
+data/real/*.parquet
+
+# OS / editor
+.DS_Store
+Thumbs.db

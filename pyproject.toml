@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdm-agentic"
+version = "0.1.0"
+description = "Agentic AI multi-agent decision support platform for industrial IoT predictive maintenance (inverters and pump drives)"
+requires-python = ">=3.10"
+dependencies = ["numpy", "pandas", "scikit-learn", "xgboost", "pyyaml", "matplotlib"]
+
+[project.optional-dependencies]
+baseline = ["torch"]
+serve = ["fastapi", "uvicorn", "requests", "streamlit", "plotly", "httpx"]
+forecast = ["chronos-forecasting"]
+dev = ["pytest", "ruff", "ipykernel", "nbformat", "nbconvert"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+# E702/E741: compact one-line statements and short math names (l, I) are used deliberately in numeric code.
+ignore = ["E702", "E741", "B905"]
+
+[tool.ruff.lint.per-file-ignores]
+# Long CSS / report-text string literals.
+"app/dashboard.py" = ["E501"]
+"src/pdm/eval/report.py" = ["E501"]
