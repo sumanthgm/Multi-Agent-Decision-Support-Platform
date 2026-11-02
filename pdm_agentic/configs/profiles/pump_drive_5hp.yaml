@@ -1,0 +1,104 @@
+note: Placeholder values for the research twin. Replace with the datasheet and manual
+  values of your reference device.
+name: pump_drive_5hp
+asset_type: pump_drive
+rating:
+  p_rated_w: 3700
+  v_motor: 415
+  i_rated_a: 7.5
+  f_nominal: 50
+  v_dc_nominal: 560
+  t_hs_trip_c: 85
+  flow_rated_m3h: 14
+  tank_m3: 20
+signals:
+  v_dc: dc_voltage
+  i_out: output_current
+  p_out: output_power
+  f_out: speed
+  t_hs: heatsink_temp
+  level: tank_level
+  i_imb: current_imbalance
+  flow: flow
+  g: irradiance
+alarms:
+  DRV-01:
+    name: DC-bus undervoltage / low light
+    signal: dc_voltage
+    direction: below
+    limit_pu: 0.7
+    condition: running
+    warn_minutes: 30
+    ramp_minutes:
+    - 40
+    - 150
+  DRV-02:
+    name: DC-bus overvoltage
+    signal: dc_voltage
+    direction: above
+    limit_pu: 1.15
+    condition: running
+    warn_minutes: 30
+    ramp_minutes:
+    - 40
+    - 150
+  DRV-03:
+    name: Motor overload
+    signal: output_current
+    direction: above
+    limit_pu: 1.05
+    condition: full_speed
+    warn_minutes: 30
+    ramp_minutes:
+    - 40
+    - 150
+  DRV-04:
+    name: Drive over-temperature
+    signal: heatsink_temp
+    direction: above
+    limit_pu: 1.0
+    condition: running
+    warn_minutes: 30
+    ramp_minutes:
+    - 60
+    - 200
+  DRV-05:
+    name: Dry run
+    signal: load_ratio
+    direction: below
+    limit_pu: 0.55
+    condition: full_speed
+    warn_minutes: 30
+    ramp_minutes:
+    - 40
+    - 150
+  DRV-06:
+    name: Tank full / no flow
+    signal: tank_level
+    direction: above
+    limit_pu: 0.95
+    condition: any
+    warn_minutes: 30
+    ramp_minutes:
+    - 60
+    - 200
+  DRV-07:
+    name: Underload (low torque)
+    signal: load_ratio
+    direction: below
+    limit_pu: 0.75
+    condition: full_speed
+    warn_minutes: 30
+    ramp_minutes:
+    - 60
+    - 200
+  DRV-08:
+    name: Output phase imbalance
+    signal: current_imbalance
+    direction: above
+    limit_pu: 0.1
+    condition: running
+    warn_minutes: 30
+    ramp_minutes:
+    - 60
+    - 200

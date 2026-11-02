@@ -1,0 +1,175 @@
+# Fault knowledge base used by the Advisor Agent.
+# SOURCE NOTE: entries were written for this project from general inverter and VFD troubleshooting
+# practice. Before submission, replace each `source` with the exact manual page of your reference
+# device (datasheet / user manual fault-code table) and adjust the steps to match it.
+INV-01:
+  title: Grid undervoltage
+  asset_type: hybrid_inverter
+  symptoms: grid voltage low falling sag dips brownout ac voltage below limit
+  causes: [Weak or overloaded grid feeder, Loose or undersized AC cable, Utility-side fault]
+  checks: [Measure AC voltage at the inverter terminals and at the meter, Check AC breaker and terminal torque, Compare with neighbours or utility outage reports]
+  steps: [Confirm the reading with a multimeter, Tighten or replace AC terminations if hot or loose, If the grid is low at the meter report it to the utility, Do not lower the protection setting outside the grid code]
+  safety: Isolate AC and DC sides before opening the terminal box.
+  source: "[replace with manual page]"
+INV-02:
+  title: Grid overvoltage
+  asset_type: hybrid_inverter
+  symptoms: grid voltage high rising midday export voltage rise ac voltage above limit
+  causes: [High export into a weak feeder, Long or thin AC cable raising voltage, Transformer tap set high]
+  checks: [Log AC voltage while exporting and while not exporting, Measure voltage drop along the AC cable, Check export-limit and volt-watt settings]
+  steps: [Enable or tighten volt-watt or export limiting per grid code, Upgrade the AC cable if the drop is high, Ask the utility to review the transformer tap]
+  safety: Changes to grid-protection settings must follow the local grid code.
+  source: "[replace with manual page]"
+INV-03:
+  title: Grid frequency out of range
+  asset_type: hybrid_inverter
+  symptoms: grid frequency drift deviation unstable hz out of band
+  causes: [Unstable utility or islanded network, Generator feeding the AC input, Wrong grid-code region selected]
+  checks: [Log frequency over a day, Check whether a generator was connected, Verify country and grid-code setting]
+  steps: [Correct the grid-code region if wrong, Separate generator input from the grid input, Report persistent deviation to the utility]
+  safety: Do not widen frequency limits beyond the grid code.
+  source: "[replace with manual page]"
+INV-05:
+  title: PV overvoltage
+  asset_type: hybrid_inverter
+  symptoms: pv voltage high open circuit voltage cold morning string voltage above maximum
+  causes: [Too many modules in series, Low temperature raising open-circuit voltage, Wrong string design]
+  checks: [Measure string open-circuit voltage early morning, Recalculate maximum Voc at the site minimum temperature, Check module count per string]
+  steps: [Disconnect the affected string, Reduce modules per string to keep Voc below the input limit, Re-test before reconnecting]
+  safety: PV strings stay live in daylight; use rated DC isolators and PPE.
+  source: "[replace with manual page]"
+INV-06:
+  title: PV insulation fault
+  asset_type: hybrid_inverter
+  symptoms: insulation resistance low falling iso fault ground fault leakage moisture
+  causes: [Moisture in connectors or junction boxes, Damaged cable insulation, Water ingress in a module]
+  checks: [Measure insulation resistance string by string, Inspect MC4 connectors and cable routing, Check after rain or at dawn when faults appear]
+  steps: [Isolate strings and find the one with low insulation, Replace wet or damaged connectors and cables, Dry and reseal junction boxes, Retest insulation before restart]
+  safety: Insulation testing applies high voltage; disconnect the inverter first.
+  source: "[replace with manual page]"
+INV-07:
+  title: Battery undervoltage
+  asset_type: hybrid_inverter
+  symptoms: battery voltage low soc low discharge sag evening load cutoff
+  causes: [Load above battery capacity, Ageing battery with high internal resistance, Wrong cut-off or battery-type setting]
+  checks: [Compare state of charge with battery voltage under load, Check battery type and cut-off settings, Check cell balance through the BMS]
+  steps: [Reduce evening load or move it to grid, Correct battery-type and cut-off settings, Arrange capacity test or replacement if internal resistance is high]
+  safety: Follow the battery maker's handling rules; never short the terminals.
+  source: "[replace with manual page]"
+INV-08:
+  title: Battery overvoltage
+  asset_type: hybrid_inverter
+  symptoms: battery voltage high charge voltage creep overcharge absorption float
+  causes: [Charge voltage set too high, BMS communication loss, Faulty voltage sensing]
+  checks: [Compare inverter and BMS voltage readings, Check absorption and float settings, Check BMS communication status]
+  steps: [Restore BMS communication, Set charge voltages to the battery datasheet, Recalibrate or replace the sensing lead]
+  safety: Overcharged batteries can vent; ventilate and stop charging.
+  source: "[replace with manual page]"
+INV-09:
+  title: Battery over-temperature
+  asset_type: hybrid_inverter
+  symptoms: battery temperature high rising heat enclosure ventilation
+  causes: [Poor ventilation around the battery, High charge or discharge current, Failing cell]
+  checks: [Measure enclosure and cell temperatures, Check charge and discharge current limits, Look for one cell much hotter than others]
+  steps: [Improve ventilation or relocate the battery, Lower charge and discharge current limits, Replace the module if one cell runs hot]
+  safety: Stop charging if temperature keeps rising; follow thermal-event procedure.
+  source: "[replace with manual page]"
+INV-10:
+  title: Inverter overload
+  asset_type: hybrid_inverter
+  symptoms: output power high load above rating overload peak appliances
+  causes: [Connected load above inverter rating, Motor inrush from pumps or compressors, Load growth over time]
+  checks: [Log output power peaks and the appliances running then, Check motor starting currents, Compare peak load with rated power]
+  steps: [Stagger large loads, Fit soft starters on motor loads, Upgrade to a larger inverter if load has grown]
+  safety: Repeated overload ageing raises fire risk; do not bypass protection.
+  source: "[replace with manual page]"
+INV-11:
+  title: Heatsink over-temperature
+  asset_type: hybrid_inverter
+  symptoms: heatsink temperature high rising fan dust derating thermal margin
+  causes: [Blocked airflow or dust on the heatsink, Failed or slow cooling fan, Installation in direct sun or a closed room]
+  checks: [Inspect fan operation and fan speed, Inspect heatsink fins for dust, Measure ambient temperature at the inverter]
+  steps: [Clean the heatsink and filters, Replace the fan if slow or noisy, Shade or relocate the inverter to keep clearance and airflow]
+  safety: Wait for the heatsink to cool before touching it.
+  source: "[replace with manual page]"
+INV-12:
+  title: Generator input out of range
+  asset_type: hybrid_inverter
+  symptoms: generator dg frequency unstable voltage out of range governor
+  causes: [Generator governor hunting, Generator undersized for the load, Low fuel or dirty filter]
+  checks: [Log generator frequency and voltage while loaded, Compare generator rating with load, Check fuel and filters]
+  steps: [Service the generator governor and filters, Reduce load on the generator, Widen generator-input acceptance only within the manual's limits]
+  safety: Keep the generator outdoors and away from the inverter air intake.
+  source: "[replace with manual page]"
+DRV-01:
+  title: DC-bus undervoltage / low light
+  asset_type: pump_drive
+  symptoms: dc bus voltage low irradiance falling low light weak sun pv voltage drop
+  causes: [Low irradiance or shading, Soiled panels, Too few modules for the motor]
+  checks: [Compare DC voltage with irradiance, Inspect panels for dirt and shade, Check string configuration against the drive minimum]
+  steps: [Clean panels, Remove shading, Adjust the drive's minimum-frequency and wake-up voltage settings, Add modules if the array is undersized]
+  safety: PV DC is live in daylight; isolate before work.
+  source: "[replace with manual page]"
+DRV-02:
+  title: DC-bus overvoltage
+  asset_type: pump_drive
+  symptoms: dc bus voltage high pv open circuit low load deceleration
+  causes: [Array open-circuit voltage too high, Fast deceleration regenerating energy, Light load at high irradiance]
+  checks: [Measure array Voc, Check deceleration time setting, Check load at the time of trip]
+  steps: [Reduce modules in series, Lengthen deceleration time, Enable overvoltage stall prevention]
+  safety: Capacitors stay charged after shutdown; wait the stated discharge time.
+  source: "[replace with manual page]"
+DRV-03:
+  title: Motor overload
+  asset_type: pump_drive
+  symptoms: motor current high rising overload clogging bearing wear same speed
+  causes: [Clogged impeller or pipe, Bearing wear, Wrong motor rated-current setting]
+  checks: [Compare current with the motor nameplate, Listen for bearing noise, Check pipe and strainer for blockage]
+  steps: [Clean strainer and impeller, Replace worn bearings, Set motor rated current to the nameplate value]
+  safety: Lock out the drive before opening the pump.
+  source: "[replace with manual page]"
+DRV-04:
+  title: Drive over-temperature
+  asset_type: pump_drive
+  symptoms: drive heatsink temperature high rising enclosure fan dust
+  causes: [Hot enclosure or direct sun, Blocked drive fan or heatsink, High continuous load]
+  checks: [Measure enclosure temperature, Inspect fan and heatsink, Check load current]
+  steps: [Shade and ventilate the enclosure, Clean or replace the fan, Reduce carrier frequency or load if allowed]
+  safety: Let the drive cool before servicing.
+  source: "[replace with manual page]"
+DRV-05:
+  title: Dry run
+  asset_type: pump_drive
+  symptoms: power low at full speed falling load no water dry run well level drop
+  causes: [Water level below pump intake, Air in the suction line, Closed suction valve]
+  checks: [Measure well or sump level, Check suction line and foot valve, Compare power with the expected curve at that speed]
+  steps: [Stop the pump and let the source recover, Lower the pump or fit a level sensor, Set dry-run protection level and restart delay]
+  safety: Running dry damages seals; do not repeatedly force restart.
+  source: "[replace with manual page]"
+DRV-06:
+  title: Tank full / no flow
+  asset_type: pump_drive
+  symptoms: tank level high full float switch pressure high no flow overflow
+  causes: [Float switch stuck or wired wrong, Outlet valve closed, Level sensor fault]
+  checks: [Inspect float switch movement and wiring, Check outlet valve, Compare level sensor with a manual reading]
+  steps: [Free or replace the float switch, Correct wiring to the drive input, Calibrate the level sensor]
+  safety: Isolate the drive control input before rewiring.
+  source: "[replace with manual page]"
+DRV-07:
+  title: Underload (low torque)
+  asset_type: pump_drive
+  symptoms: torque low load low impeller wear power below curve underload
+  causes: [Worn impeller, Partly blocked suction, Falling water level before dry run]
+  checks: [Compare power and flow with the pump curve, Inspect impeller, Check water level trend]
+  steps: [Replace or repair the impeller, Clear suction blockage, Watch level trend; treat as early dry-run warning]
+  safety: Lock out the drive before opening the pump.
+  source: "[replace with manual page]"
+DRV-08:
+  title: Output phase imbalance
+  asset_type: pump_drive
+  symptoms: current imbalance phases unbalanced loose terminal winding fault
+  causes: [Loose motor terminal, Damaged cable, Winding insulation fault]
+  checks: [Measure current on each phase, Check terminal torque at drive and motor, Megger test the motor windings]
+  steps: [Tighten or replace terminals, Replace damaged cable, Rewind or replace motor if winding fault confirmed]
+  safety: Megger tests need the drive disconnected from the motor.
+  source: "[replace with manual page]"

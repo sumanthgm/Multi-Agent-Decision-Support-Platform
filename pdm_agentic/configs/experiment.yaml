@@ -1,0 +1,20 @@
+# Experiment settings. `quick` overrides are used with --quick (for a fast Colab check).
+assets:
+  hybrid_inverter:
+    train: inverter_hybrid_5kw
+    test: [inverter_hybrid_3kw, inverter_hybrid_5kw, inverter_hybrid_10kw]
+  pump_drive:
+    train: pump_drive_5hp
+    test: [pump_drive_3hp, pump_drive_5hp, pump_drive_10hp]
+train: {days: 60, seed: 1, n_true: 10, n_near: 5}
+test: {days: 40, seeds: [11, 12, 13], n_true: 6, n_near: 3}
+transformer: {epochs: 25, train_stride: 1, batch: 256, lr: 0.001}   # fair budget for the baseline; a GPU runtime is much faster
+methods: [ours_pu_xgb, ablation_raw_xgb, aspire_transformer_raw, aspire_transformer_pu]
+forecast:
+  horizon_min: 60
+  methods: [persistence, seasonal, trend, chronos]   # chronos is skipped if not installed
+  chronos_max_origins: 150
+quick:
+  train: {days: 30, seed: 1, n_true: 6, n_near: 3}
+  test: {days: 20, seeds: [11], n_true: 4, n_near: 2}
+  transformer: {epochs: 3, train_stride: 3, batch: 256, lr: 0.001}

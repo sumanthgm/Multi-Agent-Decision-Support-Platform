@@ -1,0 +1,1 @@
+chronos-forecasting   # Chronos-Bolt zero-shot forecasting (downloads a model from Hugging Face)

@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {"name": "Experiments (quick)", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/scripts/run_experiments.py", "args": ["--quick"], "cwd": "${workspaceFolder}", "env": {"PYTHONPATH": "${workspaceFolder}/src"}},
+    {"name": "Experiments (full)", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/scripts/run_experiments.py", "cwd": "${workspaceFolder}", "env": {"PYTHONPATH": "${workspaceFolder}/src"}},
+    {"name": "Train inverter model", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/scripts/train.py", "args": ["--profile", "inverter_hybrid_5kw"], "cwd": "${workspaceFolder}", "env": {"PYTHONPATH": "${workspaceFolder}/src"}},
+    {"name": "API (FastAPI)", "type": "debugpy", "request": "launch", "module": "uvicorn", "args": ["pdm.serve.api:app", "--port", "8000"], "cwd": "${workspaceFolder}", "env": {"PYTHONPATH": "${workspaceFolder}/src", "PDM_PROFILE": "inverter_hybrid_10kw"}},
+    {"name": "Replay to API", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/scripts/replay.py", "args": ["--profile", "inverter_hybrid_10kw", "--mode", "api", "--speed", "50"], "cwd": "${workspaceFolder}", "env": {"PYTHONPATH": "${workspaceFolder}/src"}},
+    {"name": "Replay local (console)", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/scripts/replay.py", "args": ["--profile", "pump_drive_3hp", "--mode", "local"], "cwd": "${workspaceFolder}", "env": {"PYTHONPATH": "${workspaceFolder}/src"}},
+    {"name": "Dashboard (Streamlit)", "type": "debugpy", "request": "launch", "module": "streamlit", "args": ["run", "app/dashboard.py"], "cwd": "${workspaceFolder}"}
+  ]
+}

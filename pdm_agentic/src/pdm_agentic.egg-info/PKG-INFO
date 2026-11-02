@@ -1,0 +1,26 @@
+Metadata-Version: 2.4
+Name: pdm-agentic
+Version: 0.1.0
+Summary: Agentic AI multi-agent decision support platform for industrial IoT predictive maintenance (inverters and pump drives)
+Requires-Python: >=3.10
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: scikit-learn
+Requires-Dist: xgboost
+Requires-Dist: pyyaml
+Requires-Dist: matplotlib
+Provides-Extra: baseline
+Requires-Dist: torch; extra == "baseline"
+Provides-Extra: serve
+Requires-Dist: fastapi; extra == "serve"
+Requires-Dist: uvicorn; extra == "serve"
+Requires-Dist: requests; extra == "serve"
+Requires-Dist: streamlit; extra == "serve"
+Requires-Dist: httpx; extra == "serve"
+Provides-Extra: forecast
+Requires-Dist: chronos-forecasting; extra == "forecast"
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ipykernel; extra == "dev"
+Requires-Dist: nbformat; extra == "dev"
+Requires-Dist: nbconvert; extra == "dev"

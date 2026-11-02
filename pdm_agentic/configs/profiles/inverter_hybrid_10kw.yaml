@@ -1,0 +1,139 @@
+note: Placeholder values for the research twin. Replace with the datasheet and manual
+  values of your reference device.
+name: inverter_hybrid_10kw
+asset_type: hybrid_inverter
+rating:
+  p_rated_w: 10000
+  v_grid_nominal: 230
+  f_nominal: 50
+  v_bat_nominal: 48
+  battery_kwh: 15
+  v_pv_max: 800
+  r_iso_min_kohm: 100
+  t_hs_trip_c: 90
+  t_bat_trip_c: 55
+signals:
+  ac_v: grid_voltage
+  ac_f: grid_frequency
+  p_out: output_power
+  p_pv: pv_power
+  v_pv: pv_voltage
+  r_iso: insulation
+  v_bat: battery_voltage
+  soc: battery_soc
+  t_bat: battery_temp
+  t_hs: heatsink_temp
+  dg_f: dg_frequency
+  dg_on: dg_on
+  g: irradiance
+alarms:
+  INV-01:
+    name: Grid undervoltage
+    signal: grid_voltage
+    direction: below
+    limit_pu: 0.85
+    condition: any
+    warn_minutes: 30
+    ramp_minutes:
+    - 40
+    - 180
+  INV-02:
+    name: Grid overvoltage
+    signal: grid_voltage
+    direction: above
+    limit_pu: 1.1
+    condition: day
+    warn_minutes: 30
+    ramp_minutes:
+    - 40
+    - 180
+  INV-03:
+    name: Grid frequency out of range
+    signal: grid_freq_dev
+    direction: above
+    limit_pu: 0.01
+    condition: any
+    warn_minutes: 30
+    ramp_minutes:
+    - 40
+    - 150
+  INV-05:
+    name: PV overvoltage
+    signal: pv_voltage
+    direction: above
+    limit_pu: 1.0
+    condition: day
+    warn_minutes: 30
+    ramp_minutes:
+    - 40
+    - 150
+  INV-06:
+    name: PV insulation fault
+    signal: insulation
+    direction: below
+    limit_pu: 1.0
+    condition: any
+    warn_minutes: 120
+    ramp_minutes:
+    - 300
+    - 900
+  INV-07:
+    name: Battery undervoltage
+    signal: battery_voltage
+    direction: below
+    limit_pu: 0.9
+    condition: any
+    warn_minutes: 60
+    ramp_minutes:
+    - 90
+    - 300
+  INV-08:
+    name: Battery overvoltage
+    signal: battery_voltage
+    direction: above
+    limit_pu: 1.2
+    condition: any
+    warn_minutes: 60
+    ramp_minutes:
+    - 90
+    - 300
+  INV-09:
+    name: Battery over-temperature
+    signal: battery_temp
+    direction: above
+    limit_pu: 1.0
+    condition: any
+    warn_minutes: 60
+    ramp_minutes:
+    - 90
+    - 300
+  INV-10:
+    name: Inverter overload
+    signal: output_power
+    direction: above
+    limit_pu: 1.0
+    condition: any
+    warn_minutes: 30
+    ramp_minutes:
+    - 40
+    - 150
+  INV-11:
+    name: Heatsink over-temperature
+    signal: heatsink_temp
+    direction: above
+    limit_pu: 1.0
+    condition: day
+    warn_minutes: 30
+    ramp_minutes:
+    - 60
+    - 240
+  INV-12:
+    name: Generator input out of range
+    signal: dg_freq_dev
+    direction: above
+    limit_pu: 0.04
+    condition: dg_on
+    warn_minutes: 30
+    ramp_minutes:
+    - 30
+    - 90
