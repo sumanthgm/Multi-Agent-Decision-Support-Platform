@@ -5,6 +5,7 @@
 - `search(text)`: TF-IDF retrieval over the whole knowledge base, used for the README-style
   baseline that queries with raw sensor values.
 """
+
 from __future__ import annotations
 
 import json
@@ -36,11 +37,22 @@ class AdvisorAgent:
         """llm (else the agent's default; else whether OLLAMA_URL is set): True asks the LLM
         (local Ollama when OLLAMA_URL is unset), False never does."""
         if code not in self.kb:
-            return {"code": code, "title": "Unknown alarm", "steps": ["Call service: no manual entry for this code."],
-                    "source": None}
+            return {
+                "code": code,
+                "title": "Unknown alarm",
+                "steps": ["Call service: no manual entry for this code."],
+                "source": None,
+            }
         e = self.kb[code]
-        answer = {"code": code, "title": e["title"], "causes": e["causes"], "checks": e["checks"],
-                  "steps": e["steps"], "safety": e["safety"], "source": e["source"]}
+        answer = {
+            "code": code,
+            "title": e["title"],
+            "causes": e["causes"],
+            "checks": e["checks"],
+            "steps": e["steps"],
+            "safety": e["safety"],
+            "source": e["source"],
+        }
         url = os.environ.get("OLLAMA_URL")
         if llm is None:
             llm = self.llm if self.llm is not None else bool(url)
@@ -50,12 +62,15 @@ class AdvisorAgent:
 
     @staticmethod
     def _llm(entry: dict, context: str, url: str) -> str:
-        prompt = ("Rewrite these maintenance steps as a short numbered checklist for a technician. "
-                  "Use the live readings in Context to put the most relevant checks first. "
-                  "Use ONLY the facts given. End with 'Source: " + str(entry["source"]) + "'.\n\n"
-                  f"Context: {context}\nEntry: {json.dumps(entry)}")
-        body = json.dumps({"model": os.environ.get("OLLAMA_MODEL", "llama3.2"), "prompt": prompt,
-                           "stream": False}).encode()
+        prompt = (
+            "Rewrite these maintenance steps as a short numbered checklist for a technician. "
+            "Use the live readings in Context to put the most relevant checks first. "
+            "Use ONLY the facts given. End with 'Source: " + str(entry["source"]) + "'.\n\n"
+            f"Context: {context}\nEntry: {json.dumps(entry)}"
+        )
+        body = json.dumps(
+            {"model": os.environ.get("OLLAMA_MODEL", "llama3.2"), "prompt": prompt, "stream": False}
+        ).encode()
         try:
             req = urllib.request.Request(url.rstrip("/") + "/api/generate", body, {"Content-Type": "application/json"})
             return json.loads(urllib.request.urlopen(req, timeout=60).read())["response"]

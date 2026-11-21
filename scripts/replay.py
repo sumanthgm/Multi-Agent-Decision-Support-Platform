@@ -5,6 +5,7 @@
 
 The model trained on the 5 kW / 5 HP unit is reused for every rating through its profile.
 """
+
 import argparse
 import json
 import sys
@@ -28,17 +29,23 @@ if __name__ == "__main__":
     raw = d["raw"].iloc[: a.minutes]
     if a.mode == "api":
         import requests
+
         for ts, row in raw.iterrows():
-            requests.post(f"{a.url}/ingest", params={"profile": a.profile},
-                          json={"timestamp": str(ts), "values": row.to_dict()}, timeout=5)
+            requests.post(
+                f"{a.url}/ingest",
+                params={"profile": a.profile},
+                json={"timestamp": str(ts), "values": row.to_dict()},
+                timeout=5,
+            )
             time.sleep(1.0 / a.speed)
     else:
         from pdm.agents.orchestrator import Platform
         from pdm.api_helpers import platform_for
+
         plat: Platform = platform_for(a.profile)
         last = None
         for t in range(60, len(raw), 5):
-            out = plat.step(raw.iloc[max(0, t - 120):t])
+            out = plat.step(raw.iloc[max(0, t - 120) : t])
             if out["state"] != "NORMAL" and out["state"] != last:
                 print(json.dumps({k: out[k] for k in ("time", "state", "alarms", "warnings")}, default=str)[:400])
                 if out["advice"]:

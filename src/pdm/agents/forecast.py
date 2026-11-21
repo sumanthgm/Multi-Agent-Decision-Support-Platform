@@ -3,6 +3,7 @@
 Methods: persistence, seasonal naive (same time yesterday), linear trend (last 30 min), and
 Chronos-Bolt zero-shot (optional; needs `pip install chronos-forecasting` and model download).
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -17,8 +18,10 @@ def _chronos():
     if _CHRONOS is None:
         import torch
         from chronos import BaseChronosPipeline
-        _CHRONOS = BaseChronosPipeline.from_pretrained("amazon/chronos-bolt-small", device_map="cpu",
-                                                       torch_dtype=torch.float32)
+
+        _CHRONOS = BaseChronosPipeline.from_pretrained(
+            "amazon/chronos-bolt-small", device_map="cpu", torch_dtype=torch.float32
+        )
     return _CHRONOS
 
 
@@ -28,7 +31,7 @@ def forecast(history: np.ndarray, horizon: int, method: str = "trend") -> np.nda
         return np.repeat(history[-1], horizon)
     if method == "seasonal":
         if len(history) >= 1440 + horizon:
-            return history[-1440:-1440 + horizon] + (history[-1] - history[-1440 - 1])
+            return history[-1440 : -1440 + horizon] + (history[-1] - history[-1440 - 1])
         return np.repeat(history[-1], horizon)
     if method == "trend":
         w = min(30, len(history))
@@ -37,6 +40,7 @@ def forecast(history: np.ndarray, horizon: int, method: str = "trend") -> np.nda
         return icpt + slope * (w - 1 + np.arange(1, horizon + 1))
     if method == "chronos":
         import torch
+
         ctx = torch.tensor(history[-512:], dtype=torch.float32)
         q, mean = _chronos().predict_quantiles(context=[ctx], prediction_length=horizon, quantile_levels=[0.5])
         return mean[0].numpy()

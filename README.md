@@ -1,5 +1,8 @@
 # Agentic AI Multi-Agent Decision Support Platform for Industrial IoT Predictive Maintenance
 
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![CI](https://github.com/sumanthgm/pdm_agentic/actions/workflows/ci.yml/badge.svg)
+
 **M.Tech Phase II project, PES University** · Sumanth GM (PES2PG24DS312) · Guide: Dr. Pulkit Dwivedi
 
 The platform warns **30–120 minutes before** a hybrid solar inverter or a solar pump drive trips, works on **any power
@@ -14,6 +17,7 @@ It extends the ASPIRE baseline (Datta & Guha, IEEE Access 2026), reproduced in P
 | Model | XGBoost, one classifier per alarm, on per-unit window features |
 | Real data | PMSM inverter-drive lab faults (E5), La Reunion measured PV weather (E6) |
 | Runs in | VS Code (Windows / macOS / Linux) and Google Colab, CPU only |
+| Tech stack | Python · NumPy · pandas · scikit-learn · XGBoost · PyTorch (baseline only) · FastAPI · Streamlit · Plotly · PyYAML · pytest · Ruff · GitHub Actions |
 
 ---
 
@@ -115,10 +119,11 @@ Full tables: [`docs/RESULTS.md`](docs/RESULTS.md). Train on 5 kW / 5 HP; test on
 ```
 pdm_agentic/
 ├── README.md                    this file
-├── .github/workflows/ci.yml     tests + quick experiment run on every push
+├── .github/workflows/ci.yml     lint (Ruff), tests and a quick experiment run on every push
 ├── .vscode/                     Run and Debug configurations, settings
 ├── pyproject.toml               package definition (pip install -e .)
-├── requirements.txt             all dependencies (core, baseline, serving, dev)
+├── requirements.txt             core, serving and development dependencies
+├── requirements-optional.txt    PyTorch (Transformer baseline), Chronos, notebook kernel
 ├── configs/
 │   ├── experiment.yaml          days, seeds, episodes, methods (full and --quick)
 │   └── profiles/                6 asset profiles: inverter 3/5/10 kW, pump drive 3/5/10 HP
@@ -163,8 +168,10 @@ Open the repository folder (`pdm_agentic`, the one that contains `src/`) in VS C
 python -m venv .venv
 .venv\Scripts\activate              # macOS / Linux: source .venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-optional.txt   # optional: Transformer baseline, notebook
 pip install -e .
 pytest -q                           # 9 tests
+ruff check . && ruff format --check .      # code style, as in CI
 python scripts/run_experiments.py --quick    # about 2 minutes, writes results_quick/
 ```
 

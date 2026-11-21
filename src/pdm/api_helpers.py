@@ -1,4 +1,5 @@
 """Small helper to build a Platform for any profile, training the model on first use."""
+
 from __future__ import annotations
 
 import pickle

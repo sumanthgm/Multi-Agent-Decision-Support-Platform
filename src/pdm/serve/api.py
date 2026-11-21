@@ -10,6 +10,7 @@ Every endpoint takes `?profile=<name>`, so one service watches inverters and pum
 `POST /feed/start` replays twin telemetry inside the service, so the dashboard has live data without
 running scripts/replay.py.
 """
+
 from __future__ import annotations
 
 import os
@@ -45,6 +46,7 @@ def load_platform(profile_name: str = PROFILE) -> Platform:
     if os.environ.get("PDM_MODEL") and _train_profile(profile) == _train_profile(Profile.load(PROFILE)):
         path = Path(os.environ["PDM_MODEL"])
     from ..training import train_and_save
+
     if not path.exists():  # first start: train the model for this asset type
         path = train_and_save(_train_profile(profile))
     try:
@@ -73,8 +75,14 @@ def _asset(name: str) -> dict:
         raise HTTPException(404, f"unknown profile {name}")
     with _assets_lock:
         if name not in _assets:
-            _assets[name] = {"profile": Profile.load(name), "platform": None, "buffer": deque(maxlen=1440),
-                             "lock": threading.Lock(), "model_lock": threading.Lock(), "feed": None}
+            _assets[name] = {
+                "profile": Profile.load(name),
+                "platform": None,
+                "buffer": deque(maxlen=1440),
+                "lock": threading.Lock(),
+                "model_lock": threading.Lock(),
+                "feed": None,
+            }
         return _assets[name]
 
 
@@ -116,9 +124,13 @@ def _feed_info(a: dict) -> dict:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "profile": PROFILE, "rows": len(_assets[PROFILE]["buffer"]) if PROFILE in _assets else 0,
-            "llm": bool(os.environ.get("OLLAMA_URL")),
-            "assets": {n: {"rows": len(a["buffer"]), "feed": _feed_info(a)} for n, a in _assets.items()}}
+    return {
+        "status": "ok",
+        "profile": PROFILE,
+        "rows": len(_assets[PROFILE]["buffer"]) if PROFILE in _assets else 0,
+        "llm": bool(os.environ.get("OLLAMA_URL")),
+        "assets": {n: {"rows": len(a["buffer"]), "feed": _feed_info(a)} for n, a in _assets.items()},
+    }
 
 
 @app.get("/profiles")
@@ -126,11 +138,22 @@ def profiles():
     out = []
     for name in list_profiles():
         p = Profile.load(name)
-        alarms = [{"code": c, "name": al.name, "signal": al.signal, "direction": al.direction,
-                   "limit_pu": al.limit_pu, "condition": al.condition, "warn_minutes": al.warn_minutes,
-                   **_raw_limit(p, al)} for c, al in p.alarms.items()]
-        out.append({"name": name, "asset_type": p.asset_type, "rating": p.rating, "signals": p.signals,
-                    "alarms": alarms})
+        alarms = [
+            {
+                "code": c,
+                "name": al.name,
+                "signal": al.signal,
+                "direction": al.direction,
+                "limit_pu": al.limit_pu,
+                "condition": al.condition,
+                "warn_minutes": al.warn_minutes,
+                **_raw_limit(p, al),
+            }
+            for c, al in p.alarms.items()
+        ]
+        out.append(
+            {"name": name, "asset_type": p.asset_type, "rating": p.rating, "signals": p.signals, "alarms": alarms}
+        )
     return out
 
 
@@ -172,12 +195,23 @@ def forecast_view(n: int = 120, profile: str = PROFILE):
     for code, al in p.alarms.items():
         s = pu[al.signal].to_numpy(dtype=float)
         path = forecast(s, fc.horizon, fc.method)
-        out.append({"code": code, "name": al.name, "signal": al.signal, "direction": al.direction,
-                    "condition": al.condition,
-                    "limit_pu": al.limit_pu, "value_pu": float(s[-1]), "margin_pu": float(al.distance(s[-1:])[0]),
-                    "condition_met": bool(p.condition_mask(now, al.condition).iloc[0]),
-                    "minutes_to_trip": minutes_to_limit(path, al), "scale": p.pu_scale(al.signal),
-                    "history_pu": s[-n:].tolist(), "forecast_pu": path.tolist()})
+        out.append(
+            {
+                "code": code,
+                "name": al.name,
+                "signal": al.signal,
+                "direction": al.direction,
+                "condition": al.condition,
+                "limit_pu": al.limit_pu,
+                "value_pu": float(s[-1]),
+                "margin_pu": float(al.distance(s[-1:])[0]),
+                "condition_met": bool(p.condition_mask(now, al.condition).iloc[0]),
+                "minutes_to_trip": minutes_to_limit(path, al),
+                "scale": p.pu_scale(al.signal),
+                "history_pu": s[-n:].tolist(),
+                "forecast_pu": path.tolist(),
+            }
+        )
     return {"times": [str(t) for t in pu.index[-n:]], "horizon": fc.horizon, "alarms": out}
 
 
@@ -191,8 +225,10 @@ def _context(a: dict, code: str) -> str:
     if al:
         s = p.to_pu(df)[al.signal].to_numpy(dtype=float)
         ttt = _platform(a).forecaster.time_to_trip(s, al)
-        lines.append(f"{code} {al.name}: {al.signal} = {s[-1]:.3f} pu, trips {al.direction} {al.limit_pu} pu; "
-                     + (f"forecast to cross in {ttt} min." if ttt else "no crossing forecast in the next hour."))
+        lines.append(
+            f"{code} {al.name}: {al.signal} = {s[-1]:.3f} pu, trips {al.direction} {al.limit_pu} pu; "
+            + (f"forecast to cross in {ttt} min." if ttt else "no crossing forecast in the next hour.")
+        )
     lines.append("Latest readings: " + ", ".join(f"{k}={v:.4g}" for k, v in df.iloc[-1].items()))
     return " ".join(lines)
 
@@ -224,21 +260,28 @@ def feed_start(profile: str = PROFILE, scenario: str = "fault", speed: float = 2
     seed = int(np.random.default_rng().integers(1000)) if seed is None else seed
     weather = os.environ.get("PDM_WEATHER")
     # with measured weather the seed also picks which days are replayed (500+ days in the La Reunion file)
-    d = generate(a["profile"], days=3, seed=seed, n_true=3, n_near=1, weather=weather and ROOT / weather,
-                 weather_day=seed % 500 if weather else 0)
+    d = generate(
+        a["profile"],
+        days=3,
+        seed=seed,
+        n_true=3,
+        n_near=1,
+        weather=weather and ROOT / weather,
+        weather_day=seed % 500 if weather else 0,
+    )
     raw, labels = d["raw"], d["labels"]
     start = 360
     if scenario == "fault":
-        onsets = sorted(raw.index.get_loc(t) - 45 for c in a["profile"].alarm_codes
-                        for t in labels.index[labels[f"{c}_onset"] > 0])
+        onsets = sorted(
+            raw.index.get_loc(t) - 45 for c in a["profile"].alarm_codes for t in labels.index[labels[f"{c}_onset"] > 0]
+        )
         start = next((i for i in onsets if i >= PREFILL), start)
     start = max(start, PREFILL)
     with a["lock"]:
         a["buffer"].clear()
-    for ts, row in raw.iloc[start - PREFILL:start].iterrows():
+    for ts, row in raw.iloc[start - PREFILL : start].iterrows():
         _append(a, ts, row.to_dict())
-    feed = {"running": True, "scenario": scenario, "speed": max(speed, 0.1), "seed": seed,
-            "stop": threading.Event()}
+    feed = {"running": True, "scenario": scenario, "speed": max(speed, 0.1), "seed": seed, "stop": threading.Event()}
     a["feed"] = feed
     threading.Thread(target=_feed_loop, args=(a, raw.iloc[start:], feed), daemon=True).start()
     return _feed_info(a)

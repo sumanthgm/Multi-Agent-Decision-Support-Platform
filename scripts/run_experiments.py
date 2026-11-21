@@ -5,6 +5,7 @@ Usage:
     python scripts/run_experiments.py --quick   # fast check (fewer days and seeds)
     python scripts/run_experiments.py --weather data/real/reunion_weather_1min.csv --out results/real_weather
 """
+
 import argparse
 import sys
 from pathlib import Path

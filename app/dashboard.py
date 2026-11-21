@@ -4,6 +4,7 @@ Start the API first, then:  streamlit run app/dashboard.py
 Pick the asset in the sidebar and press Start under "Live feed" to stream twin telemetry,
 or post your own rows with  python scripts/replay.py --profile <name> --mode api.
 """
+
 from __future__ import annotations
 
 import threading
@@ -46,10 +47,26 @@ SIGNALS = {
     },
 }
 KPIS = {
-    "hybrid_inverter": ["grid_voltage", "grid_frequency", "output_power", "pv_power",
-                        "battery_soc", "battery_voltage", "heatsink_temp", "insulation"],
-    "pump_drive": ["dc_voltage", "output_current", "output_power", "speed",
-                   "flow", "tank_level", "heatsink_temp", "current_imbalance"],
+    "hybrid_inverter": [
+        "grid_voltage",
+        "grid_frequency",
+        "output_power",
+        "pv_power",
+        "battery_soc",
+        "battery_voltage",
+        "heatsink_temp",
+        "insulation",
+    ],
+    "pump_drive": [
+        "dc_voltage",
+        "output_current",
+        "output_power",
+        "speed",
+        "flow",
+        "tank_level",
+        "heatsink_temp",
+        "current_imbalance",
+    ],
 }
 DERIVED = {"grid_freq_dev": "grid_frequency", "dg_freq_dev": "dg_frequency", "load_ratio": "output_power"}
 COLOURS = {"ALARM": "#ff4d6d", "WARNING": "#ffb020", "NORMAL": "#2ecc71", "IDLE": "#64748b"}
@@ -141,16 +158,26 @@ def sparkline(vals: list, colour: str, w: int = 160, h: int = 34) -> str:
     lo, hi = min(v), max(v)
     span = (hi - lo) or 1.0
     pts = " ".join(f"{i * w / (len(v) - 1):.1f},{h - 3 - (x - lo) / span * (h - 6):.1f}" for i, x in enumerate(v))
-    return (f'<svg viewBox="0 0 {w} {h}" preserveAspectRatio="none"><polyline points="{pts}" fill="none" '
-            f'stroke="{colour}" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg>')
+    return (
+        f'<svg viewBox="0 0 {w} {h}" preserveAspectRatio="none"><polyline points="{pts}" fill="none" '
+        f'stroke="{colour}" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg>'
+    )
 
 
 def style(fig: go.Figure, title: str, height: int = 230) -> go.Figure:
     grid = "rgba(255,255,255,.06)"
-    fig.update_layout(height=height, margin=dict(l=8, r=8, t=40, b=8), showlegend=False, hovermode="x unified",
-                      title=dict(text=title, font=dict(size=14, color="#dbe6f7"), x=0.01),
-                      paper_bgcolor="rgba(255,255,255,0.03)", plot_bgcolor="rgba(0,0,0,0)",
-                      font=dict(color="#9fb0c8"), xaxis=dict(gridcolor=grid), yaxis=dict(gridcolor=grid))
+    fig.update_layout(
+        height=height,
+        margin=dict(l=8, r=8, t=40, b=8),
+        showlegend=False,
+        hovermode="x unified",
+        title=dict(text=title, font=dict(size=14, color="#dbe6f7"), x=0.01),
+        paper_bgcolor="rgba(255,255,255,0.03)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#9fb0c8"),
+        xaxis=dict(gridcolor=grid),
+        yaxis=dict(gridcolor=grid),
+    )
     return fig
 
 
@@ -202,7 +229,8 @@ def hero(prof: dict, status: dict) -> None:
         f'<div class="sub">{ASSET_TYPES[prof["asset_type"]]} · {rating_label(prof["name"])} · {prof["name"]}</div></div>'
         f'<div><span class="badge{" pulse" if state == "ALARM" else ""}" style="--c:{c}">{state}</span>'
         f'<div class="meta">🕒 {status.get("time", "–")} · {status.get("rows", 0)} rows · {feed_txt}</div></div></div>',
-        unsafe_allow_html=True)
+        unsafe_allow_html=True,
+    )
 
 
 def kpi_cards(prof: dict, hist: pd.DataFrame, status: dict) -> None:
@@ -213,15 +241,19 @@ def kpi_cards(prof: dict, hist: pd.DataFrame, status: dict) -> None:
         if col not in hist:
             continue
         label, unit, _ = SIGNALS[t][role]
-        watch = sorted(by_col.get(col, []), key=lambda a: ["ALARM", "WARNING", "NORMAL"].index(alarm_state(a["code"], status)))
+        watch = sorted(
+            by_col.get(col, []), key=lambda a: ["ALARM", "WARNING", "NORMAL"].index(alarm_state(a["code"], status))
+        )
         state = worst([alarm_state(a["code"], status) for a in watch])
         c = COLOURS[state]
         v, u = fmt(hist[col].iloc[-1], unit)
         foot = limit_text(watch[0], unit) if watch else "monitored"
-        cards.append(f'<div class="kpi" style="--c:{c}"><div class="l">{label}</div>'
-                     f'<div class="v">{v}<small>{u}</small></div>'
-                     f'{sparkline(hist[col].tail(90).tolist(), ACCENT if state == "NORMAL" else c)}'
-                     f'<div class="f"><span>{foot}</span><span>{state.title()}</span></div></div>')
+        cards.append(
+            f'<div class="kpi" style="--c:{c}"><div class="l">{label}</div>'
+            f'<div class="v">{v}<small>{u}</small></div>'
+            f"{sparkline(hist[col].tail(90).tolist(), ACCENT if state == 'NORMAL' else c)}"
+            f'<div class="f"><span>{foot}</span><span>{state.title()}</span></div></div>'
+        )
     st.markdown('<div class="grid">' + "".join(cards) + "</div>", unsafe_allow_html=True)
 
 
@@ -239,22 +271,36 @@ def view_telemetry(prof: dict, hist: pd.DataFrame, status: dict) -> None:
         label, unit, _ = meta[role]
         watch = by_col.get(col, [])
         state = worst([alarm_state(a["code"], status) for a in watch])
-        fig = go.Figure(go.Scatter(x=hist.index, y=hist[col], mode="lines",
-                                   line=dict(color=ACCENT if state == "NORMAL" else COLOURS[state], width=2),
-                                   hovertemplate=f"%{{y:.4g}} {unit}<extra></extra>"))
+        fig = go.Figure(
+            go.Scatter(
+                x=hist.index,
+                y=hist[col],
+                mode="lines",
+                line=dict(color=ACCENT if state == "NORMAL" else COLOURS[state], width=2),
+                hovertemplate=f"%{{y:.4g}} {unit}<extra></extra>",
+            )
+        )
         for a in watch:
             for lim in a["raw_limits"]:
-                fig.add_hline(y=lim, line=dict(color=COLOURS["ALARM"], width=1, dash="dash"),
-                              annotation_text=f"{a['code']} limit", annotation_position="top left",
-                              annotation_font=dict(color="#ff8fa3", size=10))
+                fig.add_hline(
+                    y=lim,
+                    line=dict(color=COLOURS["ALARM"], width=1, dash="dash"),
+                    annotation_text=f"{a['code']} limit",
+                    annotation_position="top left",
+                    annotation_font=dict(color="#ff8fa3", size=10),
+                )
         with cols[i % 2]:
             chart(style(fig, f"{label} ({unit})" if unit else label), key=f"sig_{col}")
 
 
 def alarm_card(code: str, title: str, lines: list[str], c: str, bar: float | None = None) -> str:
     bar_html = f'<div class="bar"><div style="width:{bar * 100:.0f}%"></div></div>' if bar is not None else ""
-    return (f'<div class="card" style="--c:{c}"><div class="t"><span class="code">{code}</span>{title}</div>'
-            + "".join(f'<div class="d">{x}</div>' for x in lines) + bar_html + "</div>")
+    return (
+        f'<div class="card" style="--c:{c}"><div class="t"><span class="code">{code}</span>{title}</div>'
+        + "".join(f'<div class="d">{x}</div>' for x in lines)
+        + bar_html
+        + "</div>"
+    )
 
 
 def view_alarms(prof: dict, status: dict, fc: dict) -> None:
@@ -267,19 +313,39 @@ def view_alarms(prof: dict, status: dict, fc: dict) -> None:
             st.success("No active alarms")
         for a in status.get("alarms", []):
             e = entry[a["code"]]
-            st.markdown(alarm_card(a["code"], a["name"], [
-                f"Now <b>{' '.join(eng(e, a['value_pu'], t))}</b> · limit {' '.join(eng(e, a['limit_pu'], t))}",
-                f"Signal {e['signal']} is past its limit ({e['direction']})"], COLOURS["ALARM"]), unsafe_allow_html=True)
+            st.markdown(
+                alarm_card(
+                    a["code"],
+                    a["name"],
+                    [
+                        f"Now <b>{' '.join(eng(e, a['value_pu'], t))}</b> · limit {' '.join(eng(e, a['limit_pu'], t))}",
+                        f"Signal {e['signal']} is past its limit ({e['direction']})",
+                    ],
+                    COLOURS["ALARM"],
+                ),
+                unsafe_allow_html=True,
+            )
     with right:
         st.markdown("#### 🟠 Predicted alarms")
         if not status.get("warnings"):
             st.success("No alarms predicted in the warning horizon")
         for w in status.get("warnings", []):
             ttt = w["forecast_minutes_to_trip"]
-            st.markdown(alarm_card(w["code"], w["name"], [
-                f"Probability <b>{w['probability']:.0%}</b> of tripping within {w['horizon_min']} min",
-                f"Trend forecast: trips in <b>~{ttt} min</b>" if ttt else "Trend forecast: no crossing in the next hour"],
-                COLOURS["WARNING"], bar=w["probability"]), unsafe_allow_html=True)
+            st.markdown(
+                alarm_card(
+                    w["code"],
+                    w["name"],
+                    [
+                        f"Probability <b>{w['probability']:.0%}</b> of tripping within {w['horizon_min']} min",
+                        f"Trend forecast: trips in <b>~{ttt} min</b>"
+                        if ttt
+                        else "Trend forecast: no crossing in the next hour",
+                    ],
+                    COLOURS["WARNING"],
+                    bar=w["probability"],
+                ),
+                unsafe_allow_html=True,
+            )
 
     st.markdown("#### 📋 Alarm watchlist")
     rows = []
@@ -288,39 +354,79 @@ def view_alarms(prof: dict, status: dict, fc: dict) -> None:
         if state == "NORMAL" and not e["condition_met"]:
             state = "IDLE"
         unit = eng(e, e["value_pu"], t)[1]
-        rows.append({"Status": {"ALARM": "🔴 Alarm", "WARNING": "🟠 Warning", "NORMAL": "🟢 OK", "IDLE": "⚪ Idle"}[state],
-                     "Code": e["code"], "Alarm": e["name"], "Now": eng(e, e["value_pu"], t)[0],
-                     "Limit": f"{'>' if e['direction'] == 'above' else '<'} {eng(e, e['limit_pu'], t)[0]}",
-                     "Unit": unit,
-                     "Trip forecast": f"~{e['minutes_to_trip']} min" if e["minutes_to_trip"] else "—",
-                     "_rank": ["ALARM", "WARNING", "NORMAL", "IDLE"].index(state)})
+        rows.append(
+            {
+                "Status": {"ALARM": "🔴 Alarm", "WARNING": "🟠 Warning", "NORMAL": "🟢 OK", "IDLE": "⚪ Idle"}[state],
+                "Code": e["code"],
+                "Alarm": e["name"],
+                "Now": eng(e, e["value_pu"], t)[0],
+                "Limit": f"{'>' if e['direction'] == 'above' else '<'} {eng(e, e['limit_pu'], t)[0]}",
+                "Unit": unit,
+                "Trip forecast": f"~{e['minutes_to_trip']} min" if e["minutes_to_trip"] else "—",
+                "_rank": ["ALARM", "WARNING", "NORMAL", "IDLE"].index(state),
+            }
+        )
     df = pd.DataFrame(rows).sort_values("_rank", kind="stable").drop(columns="_rank")
-    st.dataframe(df, hide_index=True, width="stretch",
-                 column_config={"Trip forecast": st.column_config.TextColumn(help="Trend forecast over the next hour")})
+    st.dataframe(
+        df,
+        hide_index=True,
+        width="stretch",
+        column_config={"Trip forecast": st.column_config.TextColumn(help="Trend forecast over the next hour")},
+    )
     st.caption("⚪ Idle: the alarm's operating condition (daylight, running, generator on…) is not met right now.")
 
     st.markdown("#### 🔮 Forecast to trip")
     flagged = [a["code"] for a in status.get("alarms", [])] + [w["code"] for w in status.get("warnings", [])]
-    codes = list(dict.fromkeys(flagged + sorted(entry, key=lambda c: abs(entry[c]["margin_pu"] / (entry[c]["limit_pu"] or 1)))))
-    code = st.selectbox("Alarm signal", codes, format_func=lambda c: f"{c} · {entry[c]['name']}", key=f"fc_{prof['name']}")
+    codes = list(
+        dict.fromkeys(flagged + sorted(entry, key=lambda c: abs(entry[c]["margin_pu"] / (entry[c]["limit_pu"] or 1))))
+    )
+    code = st.selectbox(
+        "Alarm signal", codes, format_func=lambda c: f"{c} · {entry[c]['name']}", key=f"fc_{prof['name']}"
+    )
     e = entry[code]
     k = e["scale"] or 1.0
     unit = eng(e, 0, t)[1]
     times = pd.to_datetime(pd.Series(fc["times"]))
     future = times.iloc[-1] + pd.to_timedelta(range(1, len(e["forecast_pu"]) + 1), unit="min")
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=times, y=[v * k for v in e["history_pu"]], mode="lines", name="measured",
-                             line=dict(color=ACCENT, width=2)))
-    fig.add_trace(go.Scatter(x=future, y=[v * k for v in e["forecast_pu"]], mode="lines", name="forecast",
-                             line=dict(color="#a78bfa", width=2, dash="dot")))
-    fig.add_hline(y=e["limit_pu"] * k, line=dict(color=COLOURS["ALARM"], dash="dash", width=1),
-                  annotation_text="alarm limit", annotation_position="top left", annotation_font=dict(color="#ff8fa3"))
+    fig.add_trace(
+        go.Scatter(
+            x=times, y=[v * k for v in e["history_pu"]], mode="lines", name="measured", line=dict(color=ACCENT, width=2)
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=future,
+            y=[v * k for v in e["forecast_pu"]],
+            mode="lines",
+            name="forecast",
+            line=dict(color="#a78bfa", width=2, dash="dot"),
+        )
+    )
+    fig.add_hline(
+        y=e["limit_pu"] * k,
+        line=dict(color=COLOURS["ALARM"], dash="dash", width=1),
+        annotation_text="alarm limit",
+        annotation_position="top left",
+        annotation_font=dict(color="#ff8fa3"),
+    )
     if e["minutes_to_trip"]:
         i = e["minutes_to_trip"] - 1
-        fig.add_trace(go.Scatter(x=[future[i]], y=[e["forecast_pu"][i] * k], mode="markers+text", name="trip",
-                                 text=[f"trip in {e['minutes_to_trip']} min"], textposition="top center",
-                                 marker=dict(color=COLOURS["ALARM"], size=10), textfont=dict(color="#ff8fa3")))
-    chart(style(fig, f"{code} · {e['signal']} ({unit}) · measured vs {fc['horizon']}-min forecast", 320), key="fc_chart")
+        fig.add_trace(
+            go.Scatter(
+                x=[future[i]],
+                y=[e["forecast_pu"][i] * k],
+                mode="markers+text",
+                name="trip",
+                text=[f"trip in {e['minutes_to_trip']} min"],
+                textposition="top center",
+                marker=dict(color=COLOURS["ALARM"], size=10),
+                textfont=dict(color="#ff8fa3"),
+            )
+        )
+    chart(
+        style(fig, f"{code} · {e['signal']} ({unit}) · measured vs {fc['horizon']}-min forecast", 320), key="fc_chart"
+    )
 
 
 def reset_checklist(keys: list[str]) -> None:
@@ -330,14 +436,20 @@ def reset_checklist(keys: list[str]) -> None:
 
 def ask_llm(api: str, name: str, code: str, at: str, cache: dict) -> None:
     """Runs on a thread: an LLM answer takes longer than the auto-refresh, which would cancel it in-script."""
+
     def run():
         try:
             r = requests.get(f"{api}/advice", params={"profile": name, "code": code, "llm": True}, timeout=180)
             r.raise_for_status()
             ans = r.json()
-            cache[(name, code)] = {"text": ans.get("llm_summary") or "(no answer)", "context": ans["context"], "time": at}
+            cache[(name, code)] = {
+                "text": ans.get("llm_summary") or "(no answer)",
+                "context": ans["context"],
+                "time": at,
+            }
         except requests.RequestException as exc:
             cache[(name, code)] = {"text": f"Advice request failed: {exc}", "context": "", "time": at}
+
     cache[(name, code)] = {"pending": True, "time": at}
     threading.Thread(target=run, daemon=True).start()
 
@@ -351,12 +463,16 @@ def view_advisor(api: str, prof: dict, status: dict, fc: dict, llm_on: bool) -> 
     top = (status.get("advice") or {}).get("code")
 
     def label(c: str) -> str:
-        return f"{ {'ALARM': '🔴', 'WARNING': '🟠'}.get(alarm_state(c, status), '🟢')} {c} · {names.get(c, '')}"
+        return f"{ {'ALARM': '🔴', 'WARNING': '🟠'}.get(alarm_state(c, status), '🟢') } {c} · {names.get(c, '')}"
 
     c1, c2 = st.columns([3, 1])
     with c2:
-        follow = st.toggle("Follow live alarm", value=True, key="follow",
-                           help="Show advice for the highest-priority active or predicted alarm")
+        follow = st.toggle(
+            "Follow live alarm",
+            value=True,
+            key="follow",
+            help="Show advice for the highest-priority active or predicted alarm",
+        )
     with c1:
         if follow and top:
             code = top
@@ -371,8 +487,10 @@ def view_advisor(api: str, prof: dict, status: dict, fc: dict, llm_on: bool) -> 
     e = entry.get(code)
     live = []
     if e:
-        live.append(f"Now <b>{' '.join(eng(e, e['value_pu'], t))}</b> · limit "
-                    f"{'>' if e['direction'] == 'above' else '<'} {' '.join(eng(e, e['limit_pu'], t))}")
+        live.append(
+            f"Now <b>{' '.join(eng(e, e['value_pu'], t))}</b> · limit "
+            f"{'>' if e['direction'] == 'above' else '<'} {' '.join(eng(e, e['limit_pu'], t))}"
+        )
         if not e["condition_met"]:
             live.append(f"⚪ Idle: the alarm only applies when the condition '{e['condition']}' holds")
         elif e["minutes_to_trip"]:
@@ -382,7 +500,9 @@ def view_advisor(api: str, prof: dict, status: dict, fc: dict, llm_on: bool) -> 
     st.markdown(alarm_card(code, kb["title"], live, COLOURS[state]), unsafe_allow_html=True)
 
     checks, steps = kb.get("checks", []), kb.get("steps", [])
-    keys = [f"ck_{name}_{code}_c{i}" for i in range(len(checks))] + [f"ck_{name}_{code}_s{i}" for i in range(len(steps))]
+    keys = [f"ck_{name}_{code}_c{i}" for i in range(len(checks))] + [
+        f"ck_{name}_{code}_s{i}" for i in range(len(steps))
+    ]
     done = sum(bool(st.session_state.get(k)) for k in keys)
     p1, p2 = st.columns([4, 1])
     p1.progress(done / max(len(keys), 1), text=f"Checklist {done}/{len(keys)} done")
@@ -407,12 +527,20 @@ def view_advisor(api: str, prof: dict, status: dict, fc: dict, llm_on: bool) -> 
     cache = st.session_state.setdefault("llm", {})
     a1, a2 = st.columns([1, 1])
     hit = cache.get((name, code), {})
-    a1.button("Generate from live readings", type="primary", key=f"ask_{name}_{code}", disabled=bool(hit.get("pending")),
-              on_click=ask_llm, args=(api, name, code, status.get("time", ""), cache))
+    a1.button(
+        "Generate from live readings",
+        type="primary",
+        key=f"ask_{name}_{code}",
+        disabled=bool(hit.get("pending")),
+        on_click=ask_llm,
+        args=(api, name, code, status.get("time", ""), cache),
+    )
     auto = a2.toggle("Auto-generate for each new live alarm", value=False, key="auto_llm")
     if not llm_on:
-        st.caption("The API has no OLLAMA_URL set, so requests go to a local Ollama at http://127.0.0.1:11434 "
-                   "(model OLLAMA_MODEL, default llama3.2). The checklist above works without an LLM.")
+        st.caption(
+            "The API has no OLLAMA_URL set, so requests go to a local Ollama at http://127.0.0.1:11434 "
+            "(model OLLAMA_MODEL, default llama3.2). The checklist above works without an LLM."
+        )
     if auto and follow and code == top and not hit:
         ask_llm(api, name, code, status.get("time", ""), cache)
         hit = cache[(name, code)]
@@ -431,19 +559,48 @@ def view_profile(prof: dict) -> None:
     left, right = st.columns([1, 2])
     with left:
         st.markdown("#### Rating")
-        st.dataframe(pd.DataFrame({"Parameter": list(prof["rating"]), "Value": [str(v) for v in prof["rating"].values()]}),
-                     hide_index=True, width="stretch")
+        st.dataframe(
+            pd.DataFrame({"Parameter": list(prof["rating"]), "Value": [str(v) for v in prof["rating"].values()]}),
+            hide_index=True,
+            width="stretch",
+        )
     with right:
         st.markdown("#### Signal map")
-        st.dataframe(pd.DataFrame([{"Raw column": col, "Role": role, "Label": SIGNALS[t].get(role, (role,))[0],
-                                    "Unit": SIGNALS[t].get(role, ("", "", ""))[1], "Group": SIGNALS[t].get(role, ("", "", "–"))[2]}
-                                   for col, role in prof["signals"].items()]), hide_index=True, width="stretch")
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "Raw column": col,
+                        "Role": role,
+                        "Label": SIGNALS[t].get(role, (role,))[0],
+                        "Unit": SIGNALS[t].get(role, ("", "", ""))[1],
+                        "Group": SIGNALS[t].get(role, ("", "", "–"))[2],
+                    }
+                    for col, role in prof["signals"].items()
+                ]
+            ),
+            hide_index=True,
+            width="stretch",
+        )
     st.markdown("#### Alarm configuration")
-    st.dataframe(pd.DataFrame([{"Code": a["code"], "Alarm": a["name"], "Signal (pu)": a["signal"],
-                                "Trips when": f"{a['direction']} {a['limit_pu']:g} pu",
-                                "Limit (raw)": ", ".join(f"{x:.4g}" for x in a["raw_limits"]) or "–",
-                                "Condition": a["condition"], "Warning horizon (min)": a["warn_minutes"]}
-                               for a in prof["alarms"]]), hide_index=True, width="stretch")
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {
+                    "Code": a["code"],
+                    "Alarm": a["name"],
+                    "Signal (pu)": a["signal"],
+                    "Trips when": f"{a['direction']} {a['limit_pu']:g} pu",
+                    "Limit (raw)": ", ".join(f"{x:.4g}" for x in a["raw_limits"]) or "–",
+                    "Condition": a["condition"],
+                    "Warning horizon (min)": a["warn_minutes"],
+                }
+                for a in prof["alarms"]
+            ]
+        ),
+        hide_index=True,
+        width="stretch",
+    )
 
 
 # ------------------------------------------------------------------ layout
@@ -457,25 +614,46 @@ with st.sidebar:
         profs = get_static(api, "/profiles")
     except requests.RequestException as exc:
         st.error("API not reachable")
-        st.markdown(f'<div class="empty"><b>Cannot reach the API at {api}</b><br><br>Start it from the repo root:<br>'
-                    '<code>uvicorn pdm.serve.api:app --port 8000</code><br><br>'
-                    f'<small>{type(exc).__name__}</small></div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="empty"><b>Cannot reach the API at {api}</b><br><br>Start it from the repo root:<br>'
+            "<code>uvicorn pdm.serve.api:app --port 8000</code><br><br>"
+            f"<small>{type(exc).__name__}</small></div>",
+            unsafe_allow_html=True,
+        )
         st.stop()
 
     by_name = {p["name"]: p for p in profs}
     default = by_name.get(health["profile"], profs[0])
-    asset_type = st.segmented_control("Asset type", list(ASSET_TYPES), format_func=ASSET_TYPES.get,
-                                      default=default["asset_type"], key="asset_type") or default["asset_type"]
-    names = sorted((p["name"] for p in profs if p["asset_type"] == asset_type),
-                   key=lambda n: float(rating_label(n).split()[0]))
-    name = st.selectbox("Power rating", names, format_func=rating_label, key=f"rating_{asset_type}",
-                        index=names.index(default["name"]) if default["name"] in names else 0)
+    asset_type = (
+        st.segmented_control(
+            "Asset type",
+            list(ASSET_TYPES),
+            format_func=ASSET_TYPES.get,
+            default=default["asset_type"],
+            key="asset_type",
+        )
+        or default["asset_type"]
+    )
+    names = sorted(
+        (p["name"] for p in profs if p["asset_type"] == asset_type), key=lambda n: float(rating_label(n).split()[0])
+    )
+    name = st.selectbox(
+        "Power rating",
+        names,
+        format_func=rating_label,
+        key=f"rating_{asset_type}",
+        index=names.index(default["name"]) if default["name"] in names else 0,
+    )
     prof = by_name[name]
 
     st.markdown("### 📡 Live feed")
     st.caption("Streams digital-twin telemetry for the selected asset from inside the API.")
-    scenario = st.radio("Scenario", ["fault", "normal"], horizontal=True,
-                        format_func={"fault": "Fault demo", "normal": "Normal day"}.get)
+    scenario = st.radio(
+        "Scenario",
+        ["fault", "normal"],
+        horizontal=True,
+        format_func={"fault": "Fault demo", "normal": "Normal day"}.get,
+    )
     speed = st.slider("Speed (telemetry minutes per second)", 1, 30, 2)
     feed = health["assets"].get(name, {}).get("feed", {})
     b1, b2 = st.columns(2)
@@ -490,10 +668,13 @@ with st.sidebar:
     st.markdown("### 🖥 Display")
     auto = st.toggle("Live auto-refresh", value=True)
     refresh = st.slider("Refresh every (s)", 1, 10, 2)
-    window = st.select_slider("History window", [60, 120, 240, 480, 720, 1440], value=240,
-                              format_func=lambda m: f"{m // 60} h")
-    st.caption("LLM advisor: " + ("🟢 Ollama configured on the API" if health.get("llm") else "⚪ manual knowledge base "
-                                  "(LLM on request)"))
+    window = st.select_slider(
+        "History window", [60, 120, 240, 480, 720, 1440], value=240, format_func=lambda m: f"{m // 60} h"
+    )
+    st.caption(
+        "LLM advisor: "
+        + ("🟢 Ollama configured on the API" if health.get("llm") else "⚪ manual knowledge base (LLM on request)")
+    )
 
 
 @st.fragment(run_every=refresh if auto else None)
@@ -507,15 +688,19 @@ def live() -> None:
         return
     hero(prof, status)
     if hist.empty:
-        st.markdown(f'<div class="empty"><b>No telemetry yet for {name}</b><br><br>'
-                    'Press <b>▶ Start</b> under <i>Live feed</i> in the sidebar to stream twin data, or post rows with<br>'
-                    f'<code>python scripts/replay.py --profile {name} --mode api --speed 50</code></div>',
-                    unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="empty"><b>No telemetry yet for {name}</b><br><br>'
+            "Press <b>▶ Start</b> under <i>Live feed</i> in the sidebar to stream twin data, or post rows with<br>"
+            f"<code>python scripts/replay.py --profile {name} --mode api --speed 50</code></div>",
+            unsafe_allow_html=True,
+        )
         return
     hist = hist.assign(timestamp=pd.to_datetime(hist["timestamp"])).set_index("timestamp")
     if status.get("status") == "warming_up":
-        st.progress(min(status["rows"] / 60, 1.0), text=f"Warming up: {status['rows']}/60 minutes of history "
-                                                        "before the agents start")
+        st.progress(
+            min(status["rows"] / 60, 1.0),
+            text=f"Warming up: {status['rows']}/60 minutes of history before the agents start",
+        )
     kpi_cards(prof, hist, status)
     view = st.segmented_control("View", VIEWS, default=VIEWS[0], key="view", label_visibility="collapsed") or VIEWS[0]
     if view == VIEWS[0]:

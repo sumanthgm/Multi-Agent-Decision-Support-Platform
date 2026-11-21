@@ -5,6 +5,7 @@ feed-forward 128, dropout 0.2. Inputs are z-scored 1-minute sequences (WINDOW x 
 using training-set statistics, as in the baseline. Output: one logit per alarm (multi-label).
 This is our re-implementation of the prediction model only, not the full ASPIRE system.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -12,14 +13,15 @@ import numpy as np
 try:
     import torch
     import torch.nn as nn
+
     TORCH_OK = True
 except Exception:  # torch optional so the rest of the framework runs without it
     TORCH_OK = False
 
 from ..agents.early_warning import tune_threshold
 
-
 if TORCH_OK:
+
     class _Net(nn.Module):
         def __init__(self, n_in: int, n_out: int, window: int, d_model=64, heads=4, layers=2, ff=128, dropout=0.2):
             super().__init__()
@@ -44,15 +46,18 @@ class AspireTransformer:
     def _norm(self, X):
         return np.nan_to_num((X - self.mu) / self.sd).astype(np.float32)
 
-    def fit(self, X: np.ndarray, y: np.ndarray, m: np.ndarray, val_frac: float = 0.2) -> "AspireTransformer":
-        torch.manual_seed(self.seed); np.random.seed(self.seed)
-        n = len(X); cut = int(n * (1 - val_frac))
+    def fit(self, X: np.ndarray, y: np.ndarray, m: np.ndarray, val_frac: float = 0.2) -> AspireTransformer:
+        torch.manual_seed(self.seed)
+        np.random.seed(self.seed)
+        n = len(X)
+        cut = int(n * (1 - val_frac))
         self.mu = X[:cut].reshape(-1, X.shape[2]).mean(0)
         self.sd = X[:cut].reshape(-1, X.shape[2]).std(0) + 1e-6
         Xn = self._norm(X)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.net = _Net(X.shape[2], y.shape[1], X.shape[1]).to(self.device)
-        pos = (y[:cut] * m[:cut]).sum(0); neg = ((1 - y[:cut]) * m[:cut]).sum(0)
+        pos = (y[:cut] * m[:cut]).sum(0)
+        neg = ((1 - y[:cut]) * m[:cut]).sum(0)
         pw = torch.tensor(np.clip(neg / np.maximum(pos, 1), 1, 200), dtype=torch.float32, device=self.device)
         loss_fn = nn.BCEWithLogitsLoss(pos_weight=pw, reduction="none")
         opt = torch.optim.Adam(self.net.parameters(), lr=self.lr)
@@ -61,10 +66,11 @@ class AspireTransformer:
             self.net.train()
             perm = torch.randperm(cut, device=self.device)
             for i in range(0, cut, self.batch):
-                b = perm[i:i + self.batch]
+                b = perm[i : i + self.batch]
                 opt.zero_grad()
                 l = (loss_fn(self.net(Xt[b]), yt[b]) * mt[b]).sum() / mt[b].sum().clamp(min=1)
-                l.backward(); opt.step()
+                l.backward()
+                opt.step()
         pv = self._proba(Xn[cut:])
         for j, c in enumerate(self.codes):
             ok = m[cut:, j] > 0
@@ -76,7 +82,7 @@ class AspireTransformer:
         out = []
         with torch.no_grad():
             for i in range(0, len(Xn), 2048):
-                out.append(torch.sigmoid(self.net(torch.tensor(Xn[i:i + 2048], device=self.device))).cpu().numpy())
+                out.append(torch.sigmoid(self.net(torch.tensor(Xn[i : i + 2048], device=self.device))).cpu().numpy())
         return np.concatenate(out) if out else np.zeros((0, len(self.codes)))
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:

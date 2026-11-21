@@ -1,4 +1,5 @@
 """Healthy telemetry for a hybrid inverter (PV + battery + grid + generator) of any rating."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -24,9 +25,9 @@ def healthy_inverter(profile: Profile, weather: pd.DataFrame, seed: int) -> pd.D
 
     shape = 0.12 + 0.25 * bump(h, 7.5, 1.0) + 0.45 * bump(h, 19.5, 1.5) + 0.10 * bump(h, 13, 2.0)
     load_pu = shape * rng.uniform(0.8, 1.1, days)[day] + rng.normal(0, 0.015, n)
-    for _ in range(days * 4):                                  # appliance switch-ons
+    for _ in range(days * 4):  # appliance switch-ons
         s = rng.integers(0, n - 30)
-        load_pu[s:s + rng.integers(5, 20)] += rng.uniform(0.10, 0.25)
+        load_pu[s : s + rng.integers(5, 20)] += rng.uniform(0.10, 0.25)
     p_out = np.clip(load_pu, 0.03, 0.90) * P
 
     cap_wh = r["battery_kwh"] * 1000.0
@@ -59,10 +60,24 @@ def healthy_inverter(profile: Profile, weather: pd.DataFrame, seed: int) -> pd.D
     for d in range(days):
         if rng.random() < 0.35:
             s = d * 1440 + int(rng.uniform(18.0, 19.0) * 60)
-            dg_on[s:s + int(rng.uniform(90, 150))] = 1
+            dg_on[s : s + int(rng.uniform(90, 150))] = 1
     dg_f = np.where(dg_on > 0, fn * (1 + rng.normal(0, 0.004, n)), fn)
 
-    return pd.DataFrame({
-        "ac_v": ac_v, "ac_f": ac_f, "p_out": p_out, "p_pv": p_pv, "v_pv": v_pv, "r_iso": r_iso,
-        "v_bat": v_bat, "soc": soc, "t_bat": t_bat, "t_hs": t_hs, "dg_f": dg_f, "dg_on": dg_on, "g": g,
-    }, index=weather.index)
+    return pd.DataFrame(
+        {
+            "ac_v": ac_v,
+            "ac_f": ac_f,
+            "p_out": p_out,
+            "p_pv": p_pv,
+            "v_pv": v_pv,
+            "r_iso": r_iso,
+            "v_bat": v_bat,
+            "soc": soc,
+            "t_bat": t_bat,
+            "t_hs": t_hs,
+            "dg_f": dg_f,
+            "dg_on": dg_on,
+            "g": g,
+        },
+        index=weather.index,
+    )

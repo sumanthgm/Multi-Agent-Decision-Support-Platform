@@ -6,6 +6,7 @@ raw window -> profile.to_pu -> Monitor (live alarms) -> Early-Warning (alarms wi
 The flow is a fixed graph, written in plain Python so it runs anywhere; it maps one-to-one
 onto a LangGraph StateGraph if you want an agent-framework implementation.
 """
+
 from __future__ import annotations
 
 import pickle
@@ -23,8 +24,13 @@ from .monitor import MonitorAgent
 
 
 class Platform:
-    def __init__(self, profile: Profile, model: EarlyWarningXGB, forecast_method: str = "trend",
-                 advisor: AdvisorAgent | None = None):
+    def __init__(
+        self,
+        profile: Profile,
+        model: EarlyWarningXGB,
+        forecast_method: str = "trend",
+        advisor: AdvisorAgent | None = None,
+    ):
         self.profile = profile
         self.monitor = MonitorAgent(profile)
         self.model = model
@@ -32,7 +38,7 @@ class Platform:
         self.advisor = advisor or AdvisorAgent()
 
     @classmethod
-    def from_files(cls, profile_name: str, model_path: str | Path, **kw) -> "Platform":
+    def from_files(cls, profile_name: str, model_path: str | Path, **kw) -> Platform:
         with open(model_path, "rb") as f:
             model = pickle.load(f)
         return cls(Profile.load(profile_name), model, **kw)
@@ -49,13 +55,22 @@ class Platform:
             if prob[j] >= self.model.thresholds[code] and code not in {a["code"] for a in alarms}:
                 a = self.profile.alarms[code]
                 ttt = self.forecaster.time_to_trip(pu[a.signal].to_numpy(), a)
-                warnings.append({"code": code, "name": a.name, "probability": float(prob[j]),
-                                 "horizon_min": a.warn_minutes, "forecast_minutes_to_trip": ttt})
+                warnings.append(
+                    {
+                        "code": code,
+                        "name": a.name,
+                        "probability": float(prob[j]),
+                        "horizon_min": a.warn_minutes,
+                        "forecast_minutes_to_trip": ttt,
+                    }
+                )
         warnings.sort(key=lambda w: -w["probability"])
         top = alarms[0]["code"] if alarms else (warnings[0]["code"] if warnings else None)
         return {
-            "time": str(raw_window.index[-1]), "asset": self.profile.name,
+            "time": str(raw_window.index[-1]),
+            "asset": self.profile.name,
             "state": "ALARM" if alarms else ("WARNING" if warnings else "NORMAL"),
-            "alarms": alarms, "warnings": warnings,
+            "alarms": alarms,
+            "warnings": warnings,
             "advice": self.advisor.advise(top) if top else None,
         }

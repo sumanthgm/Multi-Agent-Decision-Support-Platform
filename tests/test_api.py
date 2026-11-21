@@ -15,13 +15,15 @@ def test_profiles_carry_raw_limits():
     assert len(profs) == 6
     inv = {a["code"]: a for a in profs["inverter_hybrid_5kw"]["alarms"]}
     assert inv["INV-11"]["raw_column"] == "t_hs" and inv["INV-11"]["raw_limits"] == [85.0]
-    assert inv["INV-03"]["raw_limits"] == [49.5, 50.5]       # frequency band around 50 Hz
+    assert inv["INV-03"]["raw_limits"] == [49.5, 50.5]  # frequency band around 50 Hz
 
 
 def test_assets_are_kept_apart():
     raw = generate("pump_drive_3hp", 1, 3, n_true=0, n_near=0)["raw"].iloc[480:560]
     for ts, row in raw.iterrows():
-        client.post("/ingest", params={"profile": "pump_drive_3hp"}, json={"timestamp": str(ts), "values": row.to_dict()})
+        client.post(
+            "/ingest", params={"profile": "pump_drive_3hp"}, json={"timestamp": str(ts), "values": row.to_dict()}
+        )
     s = client.get("/status", params={"profile": "pump_drive_3hp"}).json()
     assert s["state"] in {"NORMAL", "WARNING", "ALARM"} and s["rows"] == 80
     assert client.get("/status", params={"profile": "pump_drive_10hp"}).json()["status"] == "no data"

@@ -3,6 +3,7 @@
 A profile is the only thing that changes between asset types and power ratings.
 Everything downstream (features, models, agents) works on per-unit (pu) signals.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -19,11 +20,11 @@ PROFILE_DIR = Path(__file__).resolve().parents[2] / "configs" / "profiles"
 class Alarm:
     code: str
     name: str
-    signal: str          # pu role the limit applies to
-    direction: str       # "above" or "below"
+    signal: str  # pu role the limit applies to
+    direction: str  # "above" or "below"
     limit_pu: float
-    condition: str       # any | day | dg_on | running | full_speed
-    warn_minutes: int    # warning horizon H
+    condition: str  # any | day | dg_on | running | full_speed
+    warn_minutes: int  # warning horizon H
     ramp_minutes: tuple[int, int]
 
     def crossed(self, pu: pd.Series) -> pd.Series:
@@ -40,24 +41,30 @@ class Profile:
     name: str
     asset_type: str
     rating: dict
-    signals: dict           # raw column -> role
+    signals: dict  # raw column -> role
     alarms: dict[str, Alarm] = field(default_factory=dict)
 
     # ------------------------------------------------------------------ loading
     @classmethod
-    def load(cls, name_or_path: str | Path) -> "Profile":
+    def load(cls, name_or_path: str | Path) -> Profile:
         p = Path(name_or_path)
         if not p.suffix:
             p = PROFILE_DIR / f"{name_or_path}.yaml"
         d = yaml.safe_load(p.read_text())
         alarms = {
-            code: Alarm(code=code, name=a["name"], signal=a["signal"], direction=a["direction"],
-                        limit_pu=float(a["limit_pu"]), condition=a["condition"],
-                        warn_minutes=int(a["warn_minutes"]), ramp_minutes=tuple(a["ramp_minutes"]))
+            code: Alarm(
+                code=code,
+                name=a["name"],
+                signal=a["signal"],
+                direction=a["direction"],
+                limit_pu=float(a["limit_pu"]),
+                condition=a["condition"],
+                warn_minutes=int(a["warn_minutes"]),
+                ramp_minutes=tuple(a["ramp_minutes"]),
+            )
             for code, a in d["alarms"].items()
         }
-        return cls(name=d["name"], asset_type=d["asset_type"], rating=d["rating"],
-                   signals=d["signals"], alarms=alarms)
+        return cls(name=d["name"], asset_type=d["asset_type"], rating=d["rating"], signals=d["signals"], alarms=alarms)
 
     @property
     def alarm_codes(self) -> list[str]:
@@ -106,10 +113,20 @@ class Profile:
             return 100.0
         if role == "irradiance":
             return 1000.0
-        key = {"grid_voltage": "v_grid_nominal", "output_power": "p_rated_w", "pv_power": "p_rated_w",
-               "pv_voltage": "v_pv_max", "insulation": "r_iso_min_kohm", "battery_voltage": "v_bat_nominal",
-               "battery_temp": "t_bat_trip_c", "heatsink_temp": "t_hs_trip_c", "dc_voltage": "v_dc_nominal",
-               "output_current": "i_rated_a", "flow": "flow_rated_m3h", "speed": "f_nominal"}.get(role)
+        key = {
+            "grid_voltage": "v_grid_nominal",
+            "output_power": "p_rated_w",
+            "pv_power": "p_rated_w",
+            "pv_voltage": "v_pv_max",
+            "insulation": "r_iso_min_kohm",
+            "battery_voltage": "v_bat_nominal",
+            "battery_temp": "t_bat_trip_c",
+            "heatsink_temp": "t_hs_trip_c",
+            "dc_voltage": "v_dc_nominal",
+            "output_current": "i_rated_a",
+            "flow": "flow_rated_m3h",
+            "speed": "f_nominal",
+        }.get(role)
         return float(self.rating[key]) if key in self.rating else None
 
     # ------------------------------------------------------------- conditions

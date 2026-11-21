@@ -1,4 +1,5 @@
 """Window-level and event-level metrics for early warning."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -8,8 +9,16 @@ from sklearn.metrics import average_precision_score, f1_score, precision_score, 
 from ..features import STRIDE
 
 
-def evaluate(codes: list[str], y: np.ndarray, m: np.ndarray, pred: np.ndarray, prob: np.ndarray,
-             labels: pd.DataFrame, ends: np.ndarray, horizons: dict[str, int]) -> pd.DataFrame:
+def evaluate(
+    codes: list[str],
+    y: np.ndarray,
+    m: np.ndarray,
+    pred: np.ndarray,
+    prob: np.ndarray,
+    labels: pd.DataFrame,
+    ends: np.ndarray,
+    horizons: dict[str, int],
+) -> pd.DataFrame:
     """Per-alarm metrics. Events are alarm onsets; lead time is minutes from first warning to onset."""
     rows = []
     n_days = len(labels) / 1440.0
@@ -50,7 +59,9 @@ def evaluate(codes: list[str], y: np.ndarray, m: np.ndarray, pred: np.ndarray, p
 
 def summarize(df: pd.DataFrame) -> dict:
     return {
-        "macro_f1": df["f1"].mean(), "macro_pr_auc": df["pr_auc"].mean(),
-        "event_recall": df["event_recall"].mean(), "median_lead_min": df["median_lead_min"].median(),
+        "macro_f1": df["f1"].mean(),
+        "macro_pr_auc": df["pr_auc"].mean(),
+        "event_recall": df["event_recall"].mean(),
+        "median_lead_min": df["median_lead_min"].median(),
         "false_alerts_per_day": df["false_alerts_per_day"].sum(),
     }

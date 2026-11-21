@@ -10,6 +10,7 @@ Dataset: Zenodo 10.5281/zenodo.7157424 (CC-BY-4.0), file dt1_solar_and_meteorolo
 Output: data/real/reunion_weather_1min.csv with columns  time, g, t_amb  (1-minute means, local time).
 Load it with pdm.twin.load_weather(), which fills short gaps and keeps complete days only.
 """
+
 import argparse
 import time
 from pathlib import Path
@@ -41,7 +42,7 @@ if __name__ == "__main__":
         parts.append(pd.concat([g.sum(), g.count().add_suffix("_n")], axis=1))
         rows += len(chunk)
         print(f"{rows / 1e6:6.1f} M rows  up to {minute.iloc[-1]}  ({time.time() - t0:.0f} s)", flush=True)
-    s = pd.concat(parts).groupby(level=0).sum()          # minutes split across chunks are merged here
+    s = pd.concat(parts).groupby(level=0).sum()  # minutes split across chunks are merged here
     out = pd.DataFrame({"g": (s["GTI"] / s["GTI_n"]).clip(lower=0), "t_amb": s["TA"] / s["TA_n"]})
     out.index.name = "time"
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)

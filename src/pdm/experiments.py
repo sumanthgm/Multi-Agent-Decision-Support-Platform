@@ -5,6 +5,7 @@ E2  Same models on unseen power ratings (profile swap only, no retraining)
 E3  Forecast Agent: 60-minute forecast error and time-to-trip on thermal alarms
 E4  Advisor Agent: correct manual entry for each alarm event vs README-style raw-value RAG
 """
+
 from __future__ import annotations
 
 import json
@@ -32,12 +33,24 @@ METHOD_LABELS = {
     "aspire_transformer_pu": "ASPIRE-style Transformer on per-unit signals",
 }
 NAMES = {  # raw column -> words used by the README-style RAG query
-    "ac_v": ("grid voltage", "V"), "ac_f": ("grid frequency", "Hz"), "p_out": ("output power", "W"),
-    "p_pv": ("PV power", "W"), "v_pv": ("PV voltage", "V"), "r_iso": ("insulation resistance", "kOhm"),
-    "v_bat": ("battery voltage", "V"), "soc": ("state of charge", "%"), "t_bat": ("battery temperature", "C"),
-    "t_hs": ("heatsink temperature", "C"), "dg_f": ("generator frequency", "Hz"), "dg_on": ("generator on", ""),
-    "g": ("irradiance", "W/m2"), "v_dc": ("DC bus voltage", "V"), "i_out": ("motor current", "A"),
-    "f_out": ("output frequency", "Hz"), "level": ("tank level", "%"), "i_imb": ("current imbalance", "%"),
+    "ac_v": ("grid voltage", "V"),
+    "ac_f": ("grid frequency", "Hz"),
+    "p_out": ("output power", "W"),
+    "p_pv": ("PV power", "W"),
+    "v_pv": ("PV voltage", "V"),
+    "r_iso": ("insulation resistance", "kOhm"),
+    "v_bat": ("battery voltage", "V"),
+    "soc": ("state of charge", "%"),
+    "t_bat": ("battery temperature", "C"),
+    "t_hs": ("heatsink temperature", "C"),
+    "dg_f": ("generator frequency", "Hz"),
+    "dg_on": ("generator on", ""),
+    "g": ("irradiance", "W/m2"),
+    "v_dc": ("DC bus voltage", "V"),
+    "i_out": ("motor current", "A"),
+    "f_out": ("output frequency", "Hz"),
+    "level": ("tank level", "%"),
+    "i_imb": ("current imbalance", "%"),
     "flow": ("flow", "m3/h"),
 }
 
@@ -65,8 +78,9 @@ class DataCache:
     def get(self, name: str, days: int, seed: int, n_true: int, n_near: int) -> dict:
         key = (name, days, seed, n_true, n_near)
         if key not in self._d:
-            self._d[key] = generate(name, days, seed, n_true=n_true, n_near=n_near,
-                                    weather=self.weather, weather_day=self.day0.get(seed, 0))
+            self._d[key] = generate(
+                name, days, seed, n_true=n_true, n_near=n_near, weather=self.weather, weather_day=self.day0.get(seed, 0)
+            )
         return self._d[key]
 
 
@@ -92,7 +106,8 @@ def run_early_warning(cfg: dict, cache: DataCache, out: Path, log=print):
     (out / "models").mkdir(parents=True, exist_ok=True)
     for asset, spec in cfg["assets"].items():
         dtr = cache.get(spec["train"], tr_cfg["days"], tr_cfg["seed"], tr_cfg["n_true"], tr_cfg["n_near"])
-        P = dtr["profile"]; codes = P.alarm_codes
+        P = dtr["profile"]
+        codes = P.alarm_codes
         H = {c: P.alarms[c].warn_minutes for c in codes}
         e = window_ends(dtr["pu"].index)
         y, m = targets(P, dtr["labels"], e)
@@ -103,7 +118,8 @@ def run_early_warning(cfg: dict, cache: DataCache, out: Path, log=print):
             else:
                 s = tf_cfg["train_stride"]
                 model = AspireTransformer(codes, epochs=tf_cfg["epochs"], batch=tf_cfg["batch"], lr=tf_cfg["lr"]).fit(
-                    _inputs(method, dtr, e[::s]), y[::s], m[::s])
+                    _inputs(method, dtr, e[::s]), y[::s], m[::s]
+                )
             log(f"[{asset}] trained {method} in {time.time() - t0:.0f}s")
             if method == "ours_pu_xgb":
                 with open(out / "models" / f"{spec['train']}_ours.pkl", "wb") as f:
@@ -117,38 +133,54 @@ def run_early_warning(cfg: dict, cache: DataCache, out: Path, log=print):
                     prob, pred = model.predict_proba(Xt), model.predict(Xt)
                     preds[(method, name, seed)] = (prob, pred, et)
                     res = evaluate(codes, yt, mt, pred, prob, dte["labels"], et, H)
-                    res.insert(0, "seed", seed); res.insert(0, "rating", name)
-                    res.insert(0, "asset", asset); res.insert(0, "method", method)
+                    res.insert(0, "seed", seed)
+                    res.insert(0, "rating", name)
+                    res.insert(0, "asset", asset)
+                    res.insert(0, "method", method)
                     rows.append(res)
     per_alarm = pd.concat(rows, ignore_index=True)
     per_alarm.to_csv(out / "e1_e2_per_alarm.csv", index=False)
 
     summ = []
     for (method, asset, rating, seed), g in per_alarm.groupby(["method", "asset", "rating", "seed"]):
-        s = summarize(g); s.update(method=method, asset=asset, rating=rating, seed=seed); summ.append(s)
+        s = summarize(g)
+        s.update(method=method, asset=asset, rating=rating, seed=seed)
+        summ.append(s)
     summ = pd.DataFrame(summ)
-    agg = summ.groupby(["asset", "rating", "method"]).agg(
-        macro_f1=("macro_f1", "mean"), macro_f1_std=("macro_f1", "std"),
-        macro_pr_auc=("macro_pr_auc", "mean"), event_recall=("event_recall", "mean"),
-        median_lead_min=("median_lead_min", "mean"), false_alerts_per_day=("false_alerts_per_day", "mean"),
-    ).reset_index()
+    agg = (
+        summ.groupby(["asset", "rating", "method"])
+        .agg(
+            macro_f1=("macro_f1", "mean"),
+            macro_f1_std=("macro_f1", "std"),
+            macro_pr_auc=("macro_pr_auc", "mean"),
+            event_recall=("event_recall", "mean"),
+            median_lead_min=("median_lead_min", "mean"),
+            false_alerts_per_day=("false_alerts_per_day", "mean"),
+        )
+        .reset_index()
+    )
     agg["trained_on"] = agg["rating"].isin([s["train"] for s in cfg["assets"].values()])
     agg.to_csv(out / "e1_e2_summary.csv", index=False)
     return per_alarm, agg, preds
 
 
 def run_forecast(cfg: dict, cache: DataCache, out: Path, log=print) -> pd.DataFrame:
-    fc = cfg["forecast"]; Hh = fc["horizon_min"]; te = cfg["test"]
+    fc = cfg["forecast"]
+    Hh = fc["horizon_min"]
+    te = cfg["test"]
     methods = list(fc["methods"])
     if "chronos" in methods:
         try:
             from .agents.forecast import _chronos
+
             _chronos()
         except Exception as exc:
             log(f"Chronos unavailable ({type(exc).__name__}); skipped.")
             methods.remove("chronos")
-    targets_by_asset = {"hybrid_inverter": ["heatsink_temp", "battery_soc", "output_power"],
-                        "pump_drive": ["heatsink_temp", "tank_level", "output_power"]}
+    targets_by_asset = {
+        "hybrid_inverter": ["heatsink_temp", "battery_soc", "output_power"],
+        "pump_drive": ["heatsink_temp", "tank_level", "output_power"],
+    }
     thermal = {"hybrid_inverter": "INV-11", "pump_drive": "DRV-04"}
     rows, ttt = [], []
     for asset, spec in cfg["assets"].items():
@@ -159,7 +191,7 @@ def run_forecast(cfg: dict, cache: DataCache, out: Path, log=print) -> pd.DataFr
             x = pu[sig].to_numpy()
             for method in methods:
                 org = origins[:: max(1, len(origins) // fc["chronos_max_origins"])] if method == "chronos" else origins
-                err = [np.mean(np.abs(forecast(x[:o], Hh, method) - x[o:o + Hh])) for o in org]
+                err = [np.mean(np.abs(forecast(x[:o], Hh, method) - x[o : o + Hh])) for o in org]
                 rows.append(dict(asset=asset, signal=sig, method=method, mae_pu=float(np.mean(err)), origins=len(org)))
         a = d["profile"].alarms[thermal[asset]]
         on = np.flatnonzero(d["labels"][f"{a.code}_onset"].to_numpy())
@@ -169,22 +201,34 @@ def run_forecast(cfg: dict, cache: DataCache, out: Path, log=print) -> pd.DataFr
                 if o < 120:
                     continue
                 pred = minutes_to_limit(forecast(pu[a.signal].to_numpy()[:o], Hh, method), a)
-                ttt.append(dict(asset=asset, alarm=a.code, method=method, true_min=30,
-                                predicted_min=pred, caught=pred is not None,
-                                abs_err_min=abs(pred - 30) if pred is not None else np.nan))
-    df = pd.DataFrame(rows); df.to_csv(out / "e3_forecast_mae.csv", index=False)
-    tt = pd.DataFrame(ttt); tt.to_csv(out / "e3_time_to_trip.csv", index=False)
+                ttt.append(
+                    dict(
+                        asset=asset,
+                        alarm=a.code,
+                        method=method,
+                        true_min=30,
+                        predicted_min=pred,
+                        caught=pred is not None,
+                        abs_err_min=abs(pred - 30) if pred is not None else np.nan,
+                    )
+                )
+    df = pd.DataFrame(rows)
+    df.to_csv(out / "e3_forecast_mae.csv", index=False)
+    tt = pd.DataFrame(ttt)
+    tt.to_csv(out / "e3_time_to_trip.csv", index=False)
     return df, tt
 
 
 def run_advisor(cfg: dict, cache: DataCache, preds: dict, out: Path) -> pd.DataFrame:
     adv = AdvisorAgent()
-    te = cfg["test"]; rows = []
+    te = cfg["test"]
+    rows = []
     for asset, spec in cfg["assets"].items():
         for name in spec["test"]:
             for seed in te["seeds"]:
                 d = cache.get(name, te["days"], seed, te["n_true"], te["n_near"])
-                P = d["profile"]; codes = P.alarm_codes
+                P = d["profile"]
+                codes = P.alarm_codes
                 prob, pred, et = preds[("ours_pu_xgb", name, seed)]
                 for code in codes:
                     for t_o in np.flatnonzero(d["labels"][f"{code}_onset"].to_numpy()):
@@ -198,11 +242,22 @@ def run_advisor(cfg: dict, cache: DataCache, preds: dict, out: Path) -> pd.DataF
                         snap = d["raw"].iloc[et[i]]
                         text = ", ".join(f"{NAMES[c][0]} {snap[c]:.2f} {NAMES[c][1]}" for c in d["raw"].columns)
                         base = adv.search(text, k=3)
-                        rows.append(dict(asset=asset, rating=name, seed=seed, alarm=code, warned=bool(len(fired)),
-                                         ours_hit1=top[0] == code, ours_hit3=code in top,
-                                         readme_rag_hit1=base[0] == code, readme_rag_hit3=code in base,
-                                         has_kb_entry=code in adv.kb))
-    df = pd.DataFrame(rows); df.to_csv(out / "e4_advisor.csv", index=False)
+                        rows.append(
+                            dict(
+                                asset=asset,
+                                rating=name,
+                                seed=seed,
+                                alarm=code,
+                                warned=bool(len(fired)),
+                                ours_hit1=top[0] == code,
+                                ours_hit3=code in top,
+                                readme_rag_hit1=base[0] == code,
+                                readme_rag_hit3=code in base,
+                                has_kb_entry=code in adv.kb,
+                            )
+                        )
+    df = pd.DataFrame(rows)
+    df.to_csv(out / "e4_advisor.csv", index=False)
     return df
 
 
@@ -220,6 +275,7 @@ def run_all(quick: bool = False, out_dir: str | Path | None = None, log=print, w
     fc, tt = run_forecast(cfg, cache, out, log)
     adv = run_advisor(cfg, cache, preds, out)
     from .eval.report import write_report
+
     write_report(cfg, out, per_alarm, agg, fc, tt, adv, cache, preds)
     meta = dict(quick=quick, runtime_s=round(time.time() - t0), torch=TORCH_OK, config=cfg)
     (out / "run_meta.json").write_text(json.dumps(meta, indent=2, default=str))

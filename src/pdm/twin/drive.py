@@ -3,6 +3,7 @@
 No open solar-pump telemetry dataset was found, so this is generated from irradiance with
 pump affinity laws (flow ~ speed, power ~ speed^3) and a simple tank level controller.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -43,14 +44,26 @@ def healthy_drive(profile: Profile, weather: pd.DataFrame, seed: int) -> pd.Data
         level[t] = np.clip(level[t - 1] + (q - use[t]) / 60.0 / vol * 100.0, 2.0, 100.0)
 
     running = speed > 0
-    p_out = np.where(running, P * speed ** 3 * (1 + rng.normal(0, 0.02, n)), 0.0)
+    p_out = np.where(running, P * speed**3 * (1 + rng.normal(0, 0.02, n)), 0.0)
     i_out = np.where(running, r["i_rated_a"] * (0.25 + 0.65 * p_out / P), 0.0) * (1 + rng.normal(0, 0.01, n))
-    v_dc = np.where(running, r["v_dc_nominal"] * (0.93 + 0.07 * np.minimum(g / 1000, 1)), 0.0) * (1 + rng.normal(0, 0.005, n))
+    v_dc = np.where(running, r["v_dc_nominal"] * (0.93 + 0.07 * np.minimum(g / 1000, 1)), 0.0) * (
+        1 + rng.normal(0, 0.005, n)
+    )
     t_hs = lag(t_amb + 25 * p_out / P, 10) + rng.normal(0, 0.3, n)
     flow = np.where(running, q_rated * np.clip((speed - 0.4) / 0.6, 0, None), 0.0)
     i_imb = np.where(running, 2.0 + rng.normal(0, 0.5, n), 0.0)
 
-    return pd.DataFrame({
-        "v_dc": v_dc, "i_out": i_out, "p_out": p_out, "f_out": speed * r["f_nominal"], "t_hs": t_hs,
-        "level": level, "i_imb": i_imb, "flow": flow, "g": g,
-    }, index=weather.index)
+    return pd.DataFrame(
+        {
+            "v_dc": v_dc,
+            "i_out": i_out,
+            "p_out": p_out,
+            "f_out": speed * r["f_nominal"],
+            "t_hs": t_hs,
+            "level": level,
+            "i_imb": i_imb,
+            "flow": flow,
+            "g": g,
+        },
+        index=weather.index,
+    )

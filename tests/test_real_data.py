@@ -12,10 +12,11 @@ from pdm.twin import generate, load_weather, weather_block  # noqa: E402
 
 def _weather_csv(tmp_path: Path) -> Path:
     idx = pd.date_range("2022-01-01", periods=4 * 1440, freq="1min")
-    w = pd.DataFrame({"g": np.clip(np.sin(np.pi * ((idx.hour + idx.minute / 60) - 6) / 12), 0, None) * 900,
-                      "t_amb": 25.0}, index=idx)
-    w = w.drop(idx[100:110])                              # short gap on day 1: interpolated
-    w = w.drop(idx[1440 + 600:1440 + 700])                # 100-min gap on day 2: day dropped
+    w = pd.DataFrame(
+        {"g": np.clip(np.sin(np.pi * ((idx.hour + idx.minute / 60) - 6) / 12), 0, None) * 900, "t_amb": 25.0}, index=idx
+    )
+    w = w.drop(idx[100:110])  # short gap on day 1: interpolated
+    w = w.drop(idx[1440 + 600 : 1440 + 700])  # 100-min gap on day 2: day dropped
     w.index.name = "time"
     path = tmp_path / "w.csv"
     w.to_csv(path)
@@ -29,13 +30,14 @@ def test_measured_weather_keeps_complete_days(tmp_path):
     assert len(w) == 3 * 1440 and not w.isna().any().any()
     b = weather_block(w, 1, 2)
     assert len(b) == 2 * 1440 and b.index.is_monotonic_increasing and b.index.freq == "min"
-    d = generate("pump_drive_5hp", 2, 3, n_true=0, n_near=0, weather=w.iloc[:2 * 1440])
+    d = generate("pump_drive_5hp", 2, 3, n_true=0, n_near=0, weather=w.iloc[: 2 * 1440])
     assert len(d["raw"]) == 2 * 1440
 
 
 def test_blocked_split_never_shares_samples():
     spec = importlib.util.spec_from_file_location("validate_real", ROOT / "scripts" / "validate_real.py")
-    vr = importlib.util.module_from_spec(spec); spec.loader.exec_module(vr)
+    vr = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(vr)
     df = pd.DataFrame({"run_id": ["a"] * 100 + ["b"] * 37})
     w = 10
     pos = df.groupby("run_id").cumcount().to_numpy()

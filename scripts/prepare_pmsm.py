@@ -12,6 +12,7 @@ Output: data/real/pmsm_10hz.csv with columns  timestamp, run_id, label, Ia, Ib, 
 Signals stay in ADC counts: the window features are min/max/mean/std/slope, and XGBoost splits are
 unchanged by a fixed scale and offset per signal, so converting to amps or degC would not change results.
 """
+
 import argparse
 import zipfile
 from pathlib import Path
@@ -40,7 +41,7 @@ if __name__ == "__main__":
     if seg.nunique() != d["label"].nunique():
         raise SystemExit("expected one contiguous recording per class")
     d.insert(0, "run_id", d["label"])
-    d.insert(0, "timestamp", d.groupby("run_id").cumcount() / 10.0)   # seconds from the start of the recording
+    d.insert(0, "timestamp", d.groupby("run_id").cumcount() / 10.0)  # seconds from the start of the recording
     d.to_csv(a.out, index=False)
     print(f"wrote {len(d)} rows, {d['label'].nunique()} classes to {a.out}")
     print(d["label"].value_counts().sort_index().to_string())

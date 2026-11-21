@@ -4,6 +4,7 @@ The irradiance is synthetic (clear-sky bell shape with day-to-day and minute-to-
 clouds). To use real weather, pass a DataFrame with columns `g` (W/m2) and `t_amb` (degC)
 from an open dataset such as the La Reunion PV dataset (see data/real/README.md).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -25,17 +26,16 @@ def make_weather(days: int, seed: int, start: str = "2026-01-01") -> pd.DataFram
 
     clear = np.clip(np.sin(np.pi * (h - 6.25) / 12.0), 0, None) ** 1.3 * 1000.0
 
-    cloudiness = rng.beta(2.0, 5.0, size=days)[day]          # how cloudy each day is
+    cloudiness = rng.beta(2.0, 5.0, size=days)[day]  # how cloudy each day is
     ar = np.zeros(n)
     eps = rng.normal(0, 0.35, size=n)
-    for t in range(1, n):                                     # fast passing clouds
+    for t in range(1, n):  # fast passing clouds
         ar[t] = 0.97 * ar[t - 1] + eps[t]
     passing = 1.0 / (1.0 + np.exp(-ar))
     k = np.clip(1.0 - cloudiness * (0.4 + 0.9 * passing), 0.08, 1.0)
     g = np.clip(clear * k + rng.normal(0, 8, n) * (clear > 0), 0, None)
 
-    t_amb = (26 + 5 * np.sin(2 * np.pi * (h - 9) / 24) + rng.normal(0, 1.5, days)[day]
-             + rng.normal(0, 0.3, n))
+    t_amb = 26 + 5 * np.sin(2 * np.pi * (h - 9) / 24) + rng.normal(0, 1.5, days)[day] + rng.normal(0, 0.3, n)
     return pd.DataFrame({"g": g, "t_amb": t_amb, "hour": h}, index=idx)
 
 
@@ -61,8 +61,10 @@ def weather_block(w: pd.DataFrame, start_day: int, days: int) -> pd.DataFrame:
     """
     day_ids = w.index.normalize().unique()
     if start_day + days > len(day_ids):
-        raise ValueError(f"measured weather has {len(day_ids)} complete days; days {start_day}..{start_day + days} asked")
-    b = w[w.index.normalize().isin(day_ids[start_day:start_day + days])].copy()
+        raise ValueError(
+            f"measured weather has {len(day_ids)} complete days; days {start_day}..{start_day + days} asked"
+        )
+    b = w[w.index.normalize().isin(day_ids[start_day : start_day + days])].copy()
     b.index = pd.date_range(day_ids[start_day], periods=len(b), freq="1min")
     return b
 

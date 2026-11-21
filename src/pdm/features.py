@@ -5,6 +5,7 @@
 - `raw_features`: the same statistics on raw signals, no limits (ablation baseline).
 - `sequences`: raw or pu 1-minute sequences for the ASPIRE-style Transformer.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -12,8 +13,8 @@ import pandas as pd
 
 from .profiles import Profile
 
-WINDOW = 60   # minutes of history per prediction
-STRIDE = 5    # one prediction every 5 minutes
+WINDOW = 60  # minutes of history per prediction
+STRIDE = 5  # one prediction every 5 minutes
 
 
 def _rolling_slope(x: np.ndarray, w: int) -> np.ndarray:
@@ -26,10 +27,10 @@ def _rolling_slope(x: np.ndarray, w: int) -> np.ndarray:
     i = np.arange(w - 1, n)
     sx = cx[i + 1] - cx[i + 1 - w]
     skx = ckx[i + 1] - ckx[i + 1 - w]
-    st = skx - (i - w + 1) * sx                       # sum of local_t * x
+    st = skx - (i - w + 1) * sx  # sum of local_t * x
     t_sum = w * (w - 1) / 2.0
     t2_sum = (w - 1) * w * (2 * w - 1) / 6.0
-    out[i] = (w * st - t_sum * sx) / (w * t2_sum - t_sum ** 2)
+    out[i] = (w * st - t_sum * sx) / (w * t2_sum - t_sum**2)
     return out
 
 
@@ -65,7 +66,7 @@ def pu_features(profile: Profile, pu: pd.DataFrame, ends: np.ndarray | None = No
         x = pu[a.signal].to_numpy(dtype=float)
         dist = a.distance(x[ends])
         slope = _rolling_slope(x, 15)[ends]
-        toward = slope if a.direction == "above" else -slope        # pu per minute toward the limit
+        toward = slope if a.direction == "above" else -slope  # pu per minute toward the limit
         feats[f"{code}_dist"] = dist
         feats[f"{code}_ttl"] = np.where(toward > 1e-6, np.clip(dist / np.maximum(toward, 1e-6), 0, 600), 600.0)
         feats[f"{code}_cond"] = profile.condition_mask(pu, a.condition).to_numpy()[ends].astype(float)

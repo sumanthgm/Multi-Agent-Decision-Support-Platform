@@ -1,9 +1,10 @@
 """Train the Early-Warning model for an asset type and save it to results/models/.
 
-    python scripts/train.py --profile inverter_hybrid_5kw
-    python scripts/train.py --profile pump_drive_5hp --days 60
-    python scripts/train.py --profile inverter_hybrid_5kw --weather data/real/reunion_weather_1min.csv
+python scripts/train.py --profile inverter_hybrid_5kw
+python scripts/train.py --profile pump_drive_5hp --days 60
+python scripts/train.py --profile inverter_hybrid_5kw --weather data/real/reunion_weather_1min.csv
 """
+
 import argparse
 import sys
 from pathlib import Path

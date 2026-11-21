@@ -1,4 +1,5 @@
 """Monitor Agent: profile rules on per-unit signals; reports alarms active right now."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -16,6 +17,7 @@ class MonitorAgent:
         for code, a in self.profile.alarms.items():
             hit = a.crossed(tail[a.signal]) & self.profile.condition_mask(tail, a.condition)
             if len(tail) >= self.debounce and bool(hit.all()):
-                out.append({"code": code, "name": a.name, "value_pu": float(tail[a.signal].iloc[-1]),
-                            "limit_pu": a.limit_pu})
+                out.append(
+                    {"code": code, "name": a.name, "value_pu": float(tail[a.signal].iloc[-1]), "limit_pu": a.limit_pu}
+                )
         return out

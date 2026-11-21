@@ -1,4 +1,5 @@
 """Train and save the Early-Warning model for one asset type (used by the API and scripts/train.py)."""
+
 from __future__ import annotations
 
 import pickle
@@ -11,8 +12,15 @@ from .twin import generate
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def train_and_save(profile_name: str, days: int = 60, seed: int = 1, n_true: int = 10, n_near: int = 5,
-                   out_dir: str | Path | None = None, weather: str | Path | None = None) -> Path:
+def train_and_save(
+    profile_name: str,
+    days: int = 60,
+    seed: int = 1,
+    n_true: int = 10,
+    n_near: int = 5,
+    out_dir: str | Path | None = None,
+    weather: str | Path | None = None,
+) -> Path:
     """weather: measured 1-minute weather CSV (its first `days` complete days); None = synthetic."""
     d = generate(profile_name, days, seed, n_true=n_true, n_near=n_near, weather=weather)
     P = d["profile"]
