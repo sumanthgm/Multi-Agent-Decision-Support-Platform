@@ -1,4 +1,4 @@
-"""Figures and the markdown results report (results/report.md)."""
+"""Figures and the markdown results report (results/<experiment>/report.md)."""
 
 from __future__ import annotations
 
@@ -143,12 +143,19 @@ def write_report(cfg, out: Path, per_alarm, agg, fc, tt, adv, cache, preds):
     _fig_example(cfg, cache, preds, out)
     trained = [s["train"] for s in cfg["assets"].values()]
     n_seeds = len(cfg["test"]["seeds"])
+    weather = (
+        f"Weather is measured irradiance and ambient temperature ({cfg['weather']}); training and each "
+        "test seed use different, non-overlapping days. "
+        if cfg.get("weather")
+        else "Weather is synthetic. "
+    )
     lines = [
         "# Phase II results: rating-aware multi-agent fault prediction",
         "",
         f"Test set: {cfg['test']['days']} days per unit, {n_seeds} random seed(s) per rating, unseen weather and fault timings. "
         f"Training: one {cfg['train']['days']}-day unit per asset type (5 kW inverter, 5 HP pump drive). "
-        "All data is from the telemetry twin (see Limitations).",
+        + weather
+        + "Device telemetry and faults come from the telemetry twin (see Limitations).",
         "",
     ]
 

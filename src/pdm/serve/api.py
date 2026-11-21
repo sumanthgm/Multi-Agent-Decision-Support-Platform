@@ -3,7 +3,8 @@
 Run:  uvicorn pdm.serve.api:app --port 8000      (from the repo root, with `pip install -e .`)
 Env:  PDM_PROFILE (profile used when a request names none; default inverter_hybrid_5kw),
       PDM_MODEL (model file for PDM_PROFILE's asset type; default results/models/<profile>_ours.pkl),
-      OLLAMA_URL / OLLAMA_MODEL (optional LLM wording for /advice).
+      OLLAMA_URL / OLLAMA_MODEL (optional LLM wording for /advice),
+      PDM_WEATHER (measured 1-minute weather CSV for the live feed; default synthetic weather).
 
 Every endpoint takes `?profile=<name>`, so one service watches inverters and pump drives side by side.
 `POST /feed/start` replays twin telemetry inside the service, so the dashboard has live data without
@@ -257,7 +258,17 @@ def feed_start(profile: str = PROFILE, scenario: str = "fault", speed: float = 2
     a = _asset(profile)
     feed_stop(profile)
     seed = int(np.random.default_rng().integers(1000)) if seed is None else seed
-    d = generate(a["profile"], days=3, seed=seed, n_true=3, n_near=1)
+    weather = os.environ.get("PDM_WEATHER")
+    # with measured weather the seed also picks which days are replayed (500+ days in the La Reunion file)
+    d = generate(
+        a["profile"],
+        days=3,
+        seed=seed,
+        n_true=3,
+        n_near=1,
+        weather=weather and ROOT / weather,
+        weather_day=seed % 500 if weather else 0,
+    )
     raw, labels = d["raw"], d["labels"]
     start = 360
     if scenario == "fault":

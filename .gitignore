@@ -16,12 +16,17 @@ venv/
 .ipynb_checkpoints/
 
 # Generated outputs (the curated full-run results in results/ are tracked)
-results_quick/
+results_quick*/
 
 # Real datasets are downloaded locally, never committed (see data/real/README.md)
 data/real/*.csv
 data/real/*.parquet
+data/real/pmsm_raw/
+data/real/reunion_raw/
 
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Local leftovers
+_to_delete/

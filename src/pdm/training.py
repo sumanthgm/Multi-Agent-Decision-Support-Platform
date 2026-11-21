@@ -19,8 +19,10 @@ def train_and_save(
     n_true: int = 10,
     n_near: int = 5,
     out_dir: str | Path | None = None,
+    weather: str | Path | None = None,
 ) -> Path:
-    d = generate(profile_name, days, seed, n_true=n_true, n_near=n_near)
+    """weather: measured 1-minute weather CSV (its first `days` complete days); None = synthetic."""
+    d = generate(profile_name, days, seed, n_true=n_true, n_near=n_near, weather=weather)
     P = d["profile"]
     e = window_ends(d["pu"].index)
     y, m = targets(P, d["labels"], e)

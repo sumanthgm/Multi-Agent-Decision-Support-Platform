@@ -1,0 +1,33 @@
+{
+  "tag": "instant",
+  "csv": "data/real/pmsm_10hz.csv",
+  "split": "blocks",
+  "folds": 4,
+  "window": 1,
+  "features": "instant",
+  "signals": [
+    "Ia",
+    "Ib",
+    "VDC",
+    "IDC",
+    "T1",
+    "T2",
+    "T3",
+    "VD"
+  ],
+  "classes": [
+    "F0",
+    "F1",
+    "F2",
+    "F3",
+    "F4",
+    "F5",
+    "F6",
+    "F7",
+    "F8"
+  ],
+  "test_windows": 2182,
+  "macro_f1": 0.939,
+  "accuracy": 0.955,
+  "detection_f1": 0.991
+}
