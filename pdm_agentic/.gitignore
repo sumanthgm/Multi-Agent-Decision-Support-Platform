@@ -1,6 +1,18 @@
+# Python
 __pycache__/
 *.pyc
-.venv/
-results_quick/
-data/real/*.csv
+*.egg-info/
+.pytest_cache/
 .ipynb_checkpoints/
+
+# Environments
+.venv/
+venv/
+
+# Real data: created by scripts/prepare_*.py
+data/real/*.csv
+data/real/pmsm_raw/
+data/real/reunion_raw/
+
+# Scratch outputs of --quick runs
+results_quick*/

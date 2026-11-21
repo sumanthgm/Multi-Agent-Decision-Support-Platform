@@ -2,6 +2,7 @@
 
     python scripts/train.py --profile inverter_hybrid_5kw
     python scripts/train.py --profile pump_drive_5hp --days 60
+    python scripts/train.py --profile inverter_hybrid_5kw --weather data/real/reunion_weather_1min.csv
 """
 import argparse
 import sys
@@ -15,5 +16,6 @@ if __name__ == "__main__":
     ap.add_argument("--profile", default="inverter_hybrid_5kw")
     ap.add_argument("--days", type=int, default=60)
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--weather", default=None, help="measured weather CSV, e.g. data/real/reunion_weather_1min.csv")
     a = ap.parse_args()
-    print("saved", train_and_save(a.profile, a.days, a.seed))
+    print("saved", train_and_save(a.profile, a.days, a.seed, weather=a.weather))

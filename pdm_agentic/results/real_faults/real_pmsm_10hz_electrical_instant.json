@@ -1,0 +1,27 @@
+{
+  "tag": "electrical_instant",
+  "csv": "data/real/pmsm_10hz.csv",
+  "split": "blocks",
+  "folds": 4,
+  "window": 1,
+  "features": "instant",
+  "signals": [
+    "Ia",
+    "Ib",
+    "VDC",
+    "IDC",
+    "VD"
+  ],
+  "classes": [
+    "F0",
+    "F1",
+    "F2",
+    "F3",
+    "F4",
+    "F5"
+  ],
+  "test_windows": 1457,
+  "macro_f1": 0.632,
+  "accuracy": 0.745,
+  "detection_f1": 0.834
+}

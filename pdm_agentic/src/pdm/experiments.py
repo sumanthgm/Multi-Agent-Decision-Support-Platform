@@ -51,13 +51,22 @@ def load_config(quick: bool = False) -> dict:
 
 
 class DataCache:
-    def __init__(self):
+    """Twin data per (rating, days, seed). With measured weather, training and each test seed get
+    their own non-overlapping block of days: train = days [0, train), test seed i = the i-th block after it."""
+
+    def __init__(self, cfg: dict | None = None):
         self._d = {}
+        self.weather, self.day0 = None, {}
+        if cfg and cfg.get("weather"):
+            self.weather = ROOT / cfg["weather"]
+            tr, te = cfg["train"], cfg["test"]
+            self.day0 = {tr["seed"]: 0, **{s: tr["days"] + i * te["days"] for i, s in enumerate(te["seeds"])}}
 
     def get(self, name: str, days: int, seed: int, n_true: int, n_near: int) -> dict:
         key = (name, days, seed, n_true, n_near)
         if key not in self._d:
-            self._d[key] = generate(name, days, seed, n_true=n_true, n_near=n_near)
+            self._d[key] = generate(name, days, seed, n_true=n_true, n_near=n_near,
+                                    weather=self.weather, weather_day=self.day0.get(seed, 0))
         return self._d[key]
 
 
@@ -197,11 +206,15 @@ def run_advisor(cfg: dict, cache: DataCache, preds: dict, out: Path) -> pd.DataF
     return df
 
 
-def run_all(quick: bool = False, out_dir: str | Path | None = None, log=print) -> dict:
+def run_all(quick: bool = False, out_dir: str | Path | None = None, log=print, weather: str | None = None) -> dict:
+    """weather: path (relative to the repo) of a measured 1-minute weather CSV; overrides the config."""
     cfg = load_config(quick)
-    out = Path(out_dir) if out_dir else ROOT / ("results_quick" if quick else "results")
+    if weather is not None:
+        cfg["weather"] = weather
+    out = Path(out_dir) if out_dir else ROOT / ("results_quick" if quick else "results/synthetic_weather")
     out.mkdir(parents=True, exist_ok=True)
-    cache = DataCache()
+    cache = DataCache(cfg)
+    log(f"Weather: {cfg.get('weather') or 'synthetic'}")
     t0 = time.time()
     per_alarm, agg, preds = run_early_warning(cfg, cache, out, log)
     fc, tt = run_forecast(cfg, cache, out, log)

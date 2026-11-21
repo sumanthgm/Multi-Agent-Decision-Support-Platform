@@ -6,6 +6,8 @@ from an open dataset such as the La Reunion PV dataset (see data/real/README.md)
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -35,6 +37,34 @@ def make_weather(days: int, seed: int, start: str = "2026-01-01") -> pd.DataFram
     t_amb = (26 + 5 * np.sin(2 * np.pi * (h - 9) / 24) + rng.normal(0, 1.5, days)[day]
              + rng.normal(0, 0.3, n))
     return pd.DataFrame({"g": g, "t_amb": t_amb, "hour": h}, index=idx)
+
+
+def load_weather(path: str | Path, max_gap_min: int = 30) -> pd.DataFrame:
+    """Measured 1-minute weather (columns time, g, t_amb; see scripts/prepare_reunion_weather.py).
+
+    Gaps up to `max_gap_min` are interpolated; days that still have missing minutes are dropped,
+    so every remaining day has 1440 rows, as the healthy-telemetry models expect.
+    """
+    w = pd.read_csv(path, parse_dates=["time"], index_col="time")
+    first, last = w.index[0].normalize(), w.index[-1].normalize() + pd.Timedelta("1D")
+    w = w.reindex(pd.date_range(first, last, freq="1min", inclusive="left"))
+    w = w.interpolate(limit=max_gap_min, limit_area="inside")
+    w = w[w.notna().all(axis=1).groupby(w.index.normalize()).transform("all")]
+    w["hour"] = w.index.hour + w.index.minute / 60.0
+    return w
+
+
+def weather_block(w: pd.DataFrame, start_day: int, days: int) -> pd.DataFrame:
+    """`days` complete measured days from day number `start_day`, on one continuous 1-minute index.
+
+    Dropped days leave jumps at midnight, when PV output is zero, so the days are joined end to end.
+    """
+    day_ids = w.index.normalize().unique()
+    if start_day + days > len(day_ids):
+        raise ValueError(f"measured weather has {len(day_ids)} complete days; days {start_day}..{start_day + days} asked")
+    b = w[w.index.normalize().isin(day_ids[start_day:start_day + days])].copy()
+    b.index = pd.date_range(day_ids[start_day], periods=len(b), freq="1min")
+    return b
 
 
 def lag(x: np.ndarray, tau_min: float) -> np.ndarray:

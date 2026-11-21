@@ -12,8 +12,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def train_and_save(profile_name: str, days: int = 60, seed: int = 1, n_true: int = 10, n_near: int = 5,
-                   out_dir: str | Path | None = None) -> Path:
-    d = generate(profile_name, days, seed, n_true=n_true, n_near=n_near)
+                   out_dir: str | Path | None = None, weather: str | Path | None = None) -> Path:
+    """weather: measured 1-minute weather CSV (its first `days` complete days); None = synthetic."""
+    d = generate(profile_name, days, seed, n_true=n_true, n_near=n_near, weather=weather)
     P = d["profile"]
     e = window_ends(d["pu"].index)
     y, m = targets(P, d["labels"], e)
