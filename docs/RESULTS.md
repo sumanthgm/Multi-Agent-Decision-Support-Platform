@@ -185,7 +185,7 @@ E2 with measured weather (unseen ratings, macro-F1):
 
 ## Reproducing the results
 
-Run from `pdm_agentic/` with the project's virtual environment:
+Run from the repository root with the project virtual environment:
 
 ```bash
 python scripts/run_experiments.py                                   # E1-E4, synthetic weather -> results/synthetic_weather/

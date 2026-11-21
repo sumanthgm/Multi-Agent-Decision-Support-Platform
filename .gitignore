@@ -16,3 +16,6 @@ data/real/reunion_raw/
 
 # Scratch outputs of --quick runs
 results_quick*/
+
+# Local leftovers
+_to_delete/
